@@ -235,8 +235,52 @@ static int mmc_read_switch(struct mmc_card *card)
 		goto out;
 	}
 
-	if (status[13] & 0x02)
+	if (status[13] & UHS_SDR50_BUS_SPEED)
 		card->sw_caps.hs_max_dtr = 50000000;
+
+	if (card->scr.sda_spec3) {
+		card->sw_caps.sd3_bus_mode = status[13];
+
+		/* Find out Driver Strengths supported by the card */
+		err = mmc_sd_switch(card, 0, 2, 1, status);
+		if (err) {
+			/*
+			 * If the host or the card can't do the switch,
+			 * fail more gracefully.
+			 */
+			if (err != -EINVAL && err != -ENOSYS && err != -EFAULT)
+				goto out;
+
+			printk(KERN_WARNING "%s: problem reading "
+				"Driver Strength.\n",
+				mmc_hostname(card->host));
+			err = 0;
+
+			goto out;
+		}
+
+		card->sw_caps.sd3_drv_type = status[9];
+
+		/* Find out Current Limits supported by the card */
+		err = mmc_sd_switch(card, 0, 3, 1, status);
+		if (err) {
+			/*
+			 * If the host or the card can't do the switch,
+			 * fail more gracefully.
+			 */
+			if (err != -EINVAL && err != -ENOSYS && err != -EFAULT)
+				goto out;
+
+			printk(KERN_WARNING "%s: problem reading "
+				"Current Limit.\n",
+				mmc_hostname(card->host));
+			err = 0;
+
+			goto out;
+		}
+
+		card->sw_caps.sd3_curr_limit = status[7];
+	}
 
 out:
 	kfree(status);
