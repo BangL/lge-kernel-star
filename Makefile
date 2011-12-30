@@ -323,12 +323,12 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-MODFLAGS  = -DMODULE -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -mfloat-abi=softfp -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2
+MODFLAGS  = -DMODULE -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfloat-abi=hard -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2 -marm -mstructure-size-boundary=32 --param l2-cache-size=1024
 CFLAGS_MODULE   = $(MODFLAGS) -pipe
 AFLAGS_MODULE   = $(MODFLAGS)
 LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
-CFLAGS_KERNEL  = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -pipe -mfloat-abi=softfp -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2
-AFLAGS_KERNEL  = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -mfloat-abi=softfp -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2
+CFLAGS_KERNEL  = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfloat-abi=hard -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -pipe -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2 -marm -mstructure-size-boundary=32 --param l2-cache-size=1024
+AFLAGS_KERNEL  = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfloat-abi=hard -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2 -marm -mstructure-size-boundary=32 --param l2-cache-size=1024
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
 # 20100705, ,[LGE_START]
