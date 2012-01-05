@@ -2127,6 +2127,9 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
 }
 EXPORT_SYMBOL_GPL(cpufreq_unregister_driver);
 
+unsigned int prev_max_freq;
+unsigned int prev_min_freq;
+
 static void powersave_early_suspend(struct early_suspend *handler)
 {
 	int cpu;
@@ -2139,6 +2142,8 @@ static void powersave_early_suspend(struct early_suspend *handler)
 			continue;
 		if (cpufreq_get_policy(&new_policy, cpu))
 			goto out;
+		prev_max_freq = cpu_policy->max;
+		prev_min_freq = cpu_policy->min;
 		new_policy.max = max_screenoff_frequency;
 		new_policy.min = cpu_policy->cpuinfo.min_freq;
 		printk(KERN_INFO
@@ -2164,8 +2169,8 @@ static void powersave_late_resume(struct early_suspend *handler)
 			continue;
 		if (cpufreq_get_policy(&new_policy, cpu))
 			goto out;
-		new_policy.max = cpu_policy->cpuinfo.max_freq;
-		new_policy.min = cpu_policy->cpuinfo.min_freq;
+		new_policy.max = prev_max_freq;
+		new_policy.min = prev_min_freq;
 		printk(KERN_INFO
 			"%s: set cpu%d freq in the %u-%u KHz range\n",
 			__func__, cpu, new_policy.min, new_policy.max);
