@@ -243,7 +243,7 @@ extern "C"
  * characterization data
  */
 #define NVRM_CPU1_ON_MIN_KHZ (503000)
-#define NVRM_CPU1_OFF_MAX_KHZ (912000)
+#define NVRM_CPU1_OFF_MAX_KHZ (655000)
 
 #define NVRM_CPU1_ON_PENDING_MS (200)
 #define NVRM_CPU1_OFF_PENDING_MS (300)
