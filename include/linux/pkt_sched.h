@@ -518,4 +518,18 @@ struct tc_drr_stats
 	__u32	deficit;
 };
 
+/* QFQ */
+enum {
+	TCA_QFQ_WEIGHT,
+	TCA_QFQ_LMAX,
+	__TCA_QFQ_MAX
+};
+
+#define TCA_QFQ_MAX	(__TCA_QFQ_MAX - 1)
+
+struct tc_qfq_stats {
+	__u32 weight;
+	__u32 lmax;
+};
+
 #endif
