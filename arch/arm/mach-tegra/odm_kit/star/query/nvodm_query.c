@@ -1477,6 +1477,8 @@ NvU32 NvOdmQueryCarveoutSize(void)
     return 0x03000000;
 #elif defined RAMHACK96
     return 0x02000000;
+#elif defined RAMHACK104
+    return 0x01800000;
 #elif defined RAMHACK112
     return 0x01000000;
 #endif
