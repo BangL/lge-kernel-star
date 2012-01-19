@@ -85,11 +85,11 @@ static atomic_t suspend_flag;
 static atomic_t bypass_flag;
 static atomic_t cal_flag;
 static atomic_t cal_result;
-//LGE_CHANGE_S [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 static atomic_t gravity_flag;
 static atomic_t linearaccel_flag;
 static atomic_t rotvector_flag;
-//LGE_CHANGE_E [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 
 static NvBool i2c_busy_flag; //jongik2.kim 20100910 i2c_fix
 
@@ -580,7 +580,7 @@ void motion_send_snap_detection(int direction)
 	}
 }
 
-//LGE_CHANGE_S [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 #define STAR_GRAVITY_X		0x30
 #define STAR_GRAVITY_Y		0x31
 #define STAR_GRAVITY_Z		0x32
@@ -620,7 +620,7 @@ void motion_send_rotvector_detection(int x, int y, int z)
 		input_sync(star_motion_dev->input_dev);
 	}
 }
-//LGE_CHANGE_E [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 
 /*---------------------------------------------------------------------------
   work function
@@ -1157,7 +1157,7 @@ static ssize_t motion_sensors_reboot_store(struct device *dev,  struct device_at
 	return count;
 }
 
-//LGE_CHANGE_S [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 static ssize_t motion_gravity_onoff_show(struct device *dev, struct device_attribute *attr, char *buf, size_t count)
 {
 	u32    val = atomic_read(&gravity_flag);
@@ -1199,7 +1199,7 @@ static ssize_t motion_rotvector_onoff_store(struct device *dev, struct device_at
 
 	return count;
 }
-//LGE_CHANGE_E [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 
 static DEVICE_ATTR(accel_onoff, 0666, motion_accel_onoff_show, motion_accel_onoff_store);
 static DEVICE_ATTR(tilt_onoff, 0666, motion_tilt_onoff_show, motion_tilt_onoff_store);
@@ -1210,11 +1210,11 @@ static DEVICE_ATTR(flip_onoff, 0666, motion_flip_onoff_show, motion_flip_onoff_s
 static DEVICE_ATTR(shake_onoff,0666, motion_shake_onoff_show, motion_shake_onoff_store);
 static DEVICE_ATTR(snap_onoff, 0666, motion_snap_onoff_show, motion_snap_onoff_store);
 static DEVICE_ATTR(composite_onoff, 0666, motion_composite_onoff_show, motion_composite_onoff_store);
-//LGE_CHANGE_S [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 static DEVICE_ATTR(gravity_onoff, 0666, motion_gravity_onoff_show, motion_gravity_onoff_store);
 static DEVICE_ATTR(linearaccel_onoff, 0666, motion_linearaccel_onoff_show, motion_linearaccel_onoff_store);
 static DEVICE_ATTR(rotvector_onoff, 0666, motion_rotvector_onoff_show, motion_rotvector_onoff_store);
-//LGE_CHANGE_E [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 
 static DEVICE_ATTR(accel_delay, 0666, NULL, motion_accel_delay_store);
 static DEVICE_ATTR(tilt_delay, 0666, NULL, motion_tilt_delay_store);
@@ -1245,11 +1245,11 @@ static struct attribute *star_motion_attributes[] = {
 	&dev_attr_cal_onoff.attr,
 	&dev_attr_composite_delay.attr,
 	&dev_attr_reboot.attr,
-//LGE_CHANGE_S [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 	&dev_attr_gravity_onoff.attr,
 	&dev_attr_linearaccel_onoff.attr,
 	&dev_attr_rotvector_onoff.attr,
-//LGE_CHANGE_E [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 	NULL
 };
 
@@ -1349,7 +1349,7 @@ static int star_motion_ioctl(struct inode *inode, struct file *file, unsigned in
 				flag |= STAR_CALIBRATION;
 			}
 
-//LGE_CHANGE_S [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 			if (atomic_read(&gravity_flag)) {
 				flag |= STAR_GRAVITY;
 			}
@@ -1361,7 +1361,7 @@ static int star_motion_ioctl(struct inode *inode, struct file *file, unsigned in
 			if (atomic_read(&rotvector_flag)) {
 				flag |= STAR_ROTATIONVECTOR;
 			}
-//LGE_CHANGE_E [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 
 			if (copy_to_user(argp,&flag, sizeof(flag))) {
 				//lprintk(".............MOTION_IOCTL_SNAP................\n");
@@ -1425,7 +1425,7 @@ static int star_motion_ioctl(struct inode *inode, struct file *file, unsigned in
 			atomic_set(&mag_y, buf[1]);
 			atomic_set(&mag_z, buf[2]);
 			break;
-//LGE_CHANGE_S [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 		case MOTION_IOCTL_GRAVITY:
 			if (copy_from_user(&buf, argp, sizeof(buf))) {
 				return -EFAULT;
@@ -1444,7 +1444,7 @@ static int star_motion_ioctl(struct inode *inode, struct file *file, unsigned in
 			}
 			motion_send_rotvector_detection(buf[0], buf[1], buf[2]);
 			break;
-//LGE_CHANGE_E [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 		case MOTION_IOCTL_TAP:
 			if (copy_from_user(&buf, argp, sizeof(buf))) {
 				return -EFAULT;
@@ -2251,7 +2251,7 @@ static int __init star_motion_probe(struct platform_device *pdev)
 	set_bit(REL_DIAL, star_motion_dev->input_dev->relbit);   // SNAP - Direction
 	set_bit(REL_WHEEL, star_motion_dev->input_dev->relbit);  // FLIP
 
-//LGE_CHANGE_S [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_S [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 	set_bit(STAR_GRAVITY_X, star_motion_dev->input_dev->absbit);		// Gravity
 	set_bit(STAR_GRAVITY_Y, star_motion_dev->input_dev->absbit);
 	set_bit(STAR_GRAVITY_Z, star_motion_dev->input_dev->absbit);
@@ -2261,7 +2261,7 @@ static int __init star_motion_probe(struct platform_device *pdev)
 	set_bit(STAR_ROTVECTOR_X, star_motion_dev->input_dev->absbit);		// Rotation Vector
 	set_bit(STAR_ROTVECTOR_Y, star_motion_dev->input_dev->absbit);
 	set_bit(STAR_ROTVECTOR_Z, star_motion_dev->input_dev->absbit);
-//LGE_CHANGE_E [] 2011-03-04, [LGE_AP20] Virtual sensor supports
+//LGE_CHANGE_E [dongjin73.kim@lge.com] 2011-03-04, [LGE_AP20] Virtual sensor supports
 
 	err = input_register_device(star_motion_dev->input_dev);
 	if (err) {
