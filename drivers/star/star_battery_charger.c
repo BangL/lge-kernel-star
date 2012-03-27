@@ -3216,48 +3216,25 @@ err_switch_dev_register:
 //20100609, , Charger Code [END]
 }
 
-
 static void tegra_battery_shutdown(struct platform_device *pdev)
 {
 
-    int i =0;
-	printk("tegra_battery_shutdown\n");
-	charging_ic_deactive();
-#if 0
-    if (&batt_dev->battery_id_poll_work)
-    {
-      cancel_delayed_work_sync(&batt_dev->battery_id_poll_work);
-	  printk("battery_id_poll_work canceled\n");
-    }
+	int i =0;
 
-    if (&batt_dev->battery_status_poll_work) 
-    {
-	cancel_delayed_work_sync(&batt_dev->battery_status_poll_work);
-	  printk("battery_status_poll_work canceled\n");
-    }
-	
-    if (batt_dev->battery_workqueue)
-    {
-	flush_workqueue(batt_dev->battery_workqueue);
-	destroy_workqueue(batt_dev->battery_workqueue);
-		printk("battery_workqueue canceled\n");
-    }
-
-	if (&(batt_dev->charger_state_read_timer))
-	{
-	del_timer_sync(&(batt_dev->charger_state_read_timer));
-		printk("harger_state_read_timer deleted\n");
-	}	
-
-	if (&(batt_dev->battery_gauge_timer))
-	{
-	del_timer_sync(&(batt_dev->battery_gauge_timer));
-	   printk("battery_gauge_timer deleted\n");
-	}
-#endif
 	bat_shutdown = 1;
+	printk("tegra_battery_shutdown\n");
 
 	NvOdmGpioInterruptUnregister(charging_ic->hGpio, charging_ic->hStatusPin, charging_ic->hCHGDone_int);
+	charging_ic_deactive_for_rechrge();
+
+	cancel_delayed_work_sync(&batt_dev->battery_status_poll_work);
+	cancel_delayed_work_sync(&batt_dev->battery_id_poll_work);
+	flush_workqueue(batt_dev->battery_workqueue);
+	destroy_workqueue(batt_dev->battery_workqueue);
+
+	del_timer_sync(&(batt_dev->charger_state_read_timer));
+	del_timer_sync(&(batt_dev->battery_gauge_timer));
+
 	NvOdmGpioSetState( charging_ic->hGpio, charging_ic->hStatusPin, 0x0);
 	NvOdmGpioConfig( charging_ic->hGpio, charging_ic->hStatusPin, NvOdmGpioPinMode_Output);
 
@@ -3270,13 +3247,14 @@ static void tegra_battery_shutdown(struct platform_device *pdev)
 	NvOdmGpioReleasePinHandle(charging_ic->hGpio, charging_ic->hPGBPin);
 	NvOdmGpioReleasePinHandle(charging_ic->hGpio, charging_ic->hSetPin);
 
-    if (charging_ic->hGpio) NvOdmGpioClose(charging_ic->hGpio); 
+	if (charging_ic->hGpio) NvOdmGpioClose(charging_ic->hGpio); 
 
 #if 0
 
 	for (i = 0; i < ARRAY_SIZE(tegra_supplies); i++) {
 		power_supply_unregister(&tegra_supplies[i]);
 	}
+#endif
 
 	if (star_batt_dev)
 	{
@@ -3307,10 +3285,7 @@ static void tegra_battery_shutdown(struct platform_device *pdev)
 	}
 #endif // STAR_BATTERY_AT_COMMAND
 	//20100926, , Communication with BatteryService for AT Command [END]
-#endif
-
 }
-
 
 static int tegra_battery_remove(struct platform_device *pdev)
 {
