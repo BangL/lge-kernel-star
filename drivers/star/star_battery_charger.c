@@ -1718,12 +1718,12 @@ static int tegra_battery_get_property(struct power_supply *psy,
 
 		case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
-			val->intval = 4203;
+			val->intval = 4203 * STAR_VOLT_UNIT;
 			break;
 
 		case POWER_SUPPLY_PROP_VOLTAGE_MIN:
 		case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
-			val->intval = 3390;
+			val->intval = 3390 * STAR_VOLT_UNIT;
 			break;
 
 		case POWER_SUPPLY_PROP_CAPACITY:
