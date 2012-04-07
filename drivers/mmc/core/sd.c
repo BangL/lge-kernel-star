@@ -460,6 +460,10 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
 		/*
 		 * Fetch switch information from card.
 		 */
+
+#ifdef CONFIG_MACH_STAR
+		mdelay(10);
+#endif
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
 		for (retries = 1; retries <= 3; retries++) {
 			err = mmc_read_switch(card);
