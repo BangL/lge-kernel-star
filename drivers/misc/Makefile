@@ -31,3 +31,4 @@ obj-$(CONFIG_WL127X_RFKILL)	+= wl127x-rfkill.o
 obj-$(CONFIG_APANIC)		+= apanic.o
 obj-$(CONFIG_TSPDRV)		+= tspdrv/
 obj-$(CONFIG_FSYNC_CONTROL)	+= fsync_control.o
+obj-$(CONFIG_VIBRATOR_CONTROL)  += vibrator_control.o
