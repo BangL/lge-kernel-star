@@ -162,7 +162,7 @@ static void nfs4_setup_readdir(u64 cookie, __be32 *verifier, struct dentry *dent
 	memset(&readdir->verifier, 0, sizeof(readdir->verifier));
 	if (cookie == 2)
 		return;
-	
+
 	/*
 	 * NFSv4 servers do not return entries for '.' and '..'
 	 * Therefore, we fake these entries here.  We let '.'
@@ -171,7 +171,7 @@ static void nfs4_setup_readdir(u64 cookie, __be32 *verifier, struct dentry *dent
 	 * instead of 1 or 2.
 	 */
 	start = p = kmap_atomic(*readdir->pages, KM_USER0);
-	
+
 	if (cookie == 0) {
 		*p++ = xdr_one;                                  /* next */
 		*p++ = xdr_zero;                   /* cookie, first word */
@@ -184,7 +184,7 @@ static void nfs4_setup_readdir(u64 cookie, __be32 *verifier, struct dentry *dent
 		*p++ = htonl(8);              /* attribute buffer length */
 		p = xdr_encode_hyper(p, NFS_FILEID(dentry->d_inode));
 	}
-	
+
 	*p++ = xdr_one;                                  /* next */
 	*p++ = xdr_zero;                   /* cookie, first word */
 	*p++ = xdr_two;                   /* cookie, second word */
@@ -1067,6 +1067,7 @@ static int nfs4_open_recover(struct nfs4_opendata *opendata, struct nfs4_state *
 	clear_bit(NFS_DELEGATED_STATE, &state->flags);
 	smp_rmb();
 	if (state->n_rdwr != 0) {
+		clear_bit(NFS_O_RDWR_STATE, &state->flags);
 		ret = nfs4_open_recover_helper(opendata, FMODE_READ|FMODE_WRITE, &newstate);
 		if (ret != 0)
 			return ret;
@@ -1074,6 +1075,7 @@ static int nfs4_open_recover(struct nfs4_opendata *opendata, struct nfs4_state *
 			return -ESTALE;
 	}
 	if (state->n_wronly != 0) {
+		clear_bit(NFS_O_WRONLY_STATE, &state->flags);
 		ret = nfs4_open_recover_helper(opendata, FMODE_WRITE, &newstate);
 		if (ret != 0)
 			return ret;
@@ -1081,6 +1083,7 @@ static int nfs4_open_recover(struct nfs4_opendata *opendata, struct nfs4_state *
 			return -ESTALE;
 	}
 	if (state->n_rdonly != 0) {
+		clear_bit(NFS_O_RDONLY_STATE, &state->flags);
 		ret = nfs4_open_recover_helper(opendata, FMODE_READ, &newstate);
 		if (ret != 0)
 			return ret;
@@ -1490,7 +1493,7 @@ static int _nfs4_open_expired(struct nfs_open_context *ctx, struct nfs4_state *s
 	return ret;
 }
 
-static inline int nfs4_do_open_expired(struct nfs_open_context *ctx, struct nfs4_state *state)
+static int nfs4_do_open_expired(struct nfs_open_context *ctx, struct nfs4_state *state)
 {
 	struct nfs_server *server = NFS_SERVER(state->inode);
 	struct nfs4_exception exception = { };
@@ -1498,10 +1501,16 @@ static inline int nfs4_do_open_expired(struct nfs_open_context *ctx, struct nfs4
 
 	do {
 		err = _nfs4_open_expired(ctx, state);
-		if (err != -NFS4ERR_DELAY)
-			break;
-		nfs4_handle_exception(server, err, &exception);
+		switch (err) {
+		default:
+			goto out;
+		case -NFS4ERR_GRACE:
+		case -NFS4ERR_DELAY:
+			nfs4_handle_exception(server, err, &exception);
+			err = 0;
+		}
 	} while (exception.retry);
+out:
 	return err;
 }
 
@@ -2166,7 +2175,7 @@ static int _nfs4_proc_getattr(struct nfs_server *server, struct nfs_fh *fhandle,
 		.rpc_argp = &args,
 		.rpc_resp = &res,
 	};
-	
+
 	nfs_fattr_init(fattr);
 	return nfs4_call_sync(server, &msg, &args, &res, 0);
 }
@@ -2210,7 +2219,7 @@ nfs4_proc_setattr(struct dentry *dentry, struct nfs_fattr *fattr,
 	int status;
 
 	nfs_fattr_init(fattr);
-	
+
 	/* Search for an existing open(O_WRITE) file */
 	if (sattr->ia_valid & ATTR_FILE) {
 		struct nfs_open_context *ctx;
@@ -2279,7 +2288,7 @@ static int _nfs4_proc_lookup(struct inode *dir, const struct qstr *name,
 		struct nfs_fh *fhandle, struct nfs_fattr *fattr)
 {
 	int status;
-	
+
 	dprintk("NFS call  lookup %s\n", name->name);
 	status = _nfs4_proc_lookupfh(NFS_SERVER(dir), NFS_FH(dir), name, fhandle, fattr);
 	if (status == -NFS4ERR_MOVED)
@@ -2565,7 +2574,7 @@ static int _nfs4_proc_rename(struct inode *old_dir, struct qstr *old_name,
 		.rpc_resp = &res,
 	};
 	int			status;
-	
+
 	nfs_fattr_init(res.old_fattr);
 	nfs_fattr_init(res.new_fattr);
 	status = nfs4_call_sync(server, &msg, &arg, &res, 1);
@@ -2710,7 +2719,7 @@ static int _nfs4_proc_symlink(struct inode *dir, struct dentry *dentry,
 	data->msg.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_SYMLINK];
 	data->arg.u.symlink.pages = &page;
 	data->arg.u.symlink.len = len;
-	
+
 	status = nfs4_do_create(dir, dentry, data);
 
 	nfs4_free_createdata(data);
@@ -2838,7 +2847,7 @@ static int _nfs4_proc_mknod(struct inode *dir, struct dentry *dentry,
 		data->arg.u.device.specdata1 = MAJOR(rdev);
 		data->arg.u.device.specdata2 = MINOR(rdev);
 	}
-	
+
 	status = nfs4_do_create(dir, dentry, data);
 
 	nfs4_free_createdata(data);
@@ -2998,7 +3007,7 @@ static void nfs4_proc_read_setup(struct nfs_read_data *data, struct rpc_message 
 static int nfs4_write_done(struct rpc_task *task, struct nfs_write_data *data)
 {
 	struct inode *inode = data->inode;
-	
+
 	/* slot is freed in nfs_writeback_done */
 	nfs4_sequence_done(NFS_SERVER(inode), &data->res.seq_res,
 			   task->tk_status);
@@ -3028,7 +3037,7 @@ static void nfs4_proc_write_setup(struct nfs_write_data *data, struct rpc_messag
 static int nfs4_commit_done(struct rpc_task *task, struct nfs_write_data *data)
 {
 	struct inode *inode = data->inode;
-	
+
 	nfs4_sequence_done(NFS_SERVER(inode), &data->res.seq_res,
 			   task->tk_status);
 	if (nfs4_async_handle_error(task, NFS_SERVER(inode), NULL) == -EAGAIN) {
@@ -3044,7 +3053,7 @@ static int nfs4_commit_done(struct rpc_task *task, struct nfs_write_data *data)
 static void nfs4_proc_commit_setup(struct nfs_write_data *data, struct rpc_message *msg)
 {
 	struct nfs_server *server = NFS_SERVER(data->inode);
-	
+
 	data->args.bitmask = server->cache_consistency_bitmask;
 	data->res.server = server;
 	msg->rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_COMMIT];
@@ -4111,10 +4120,16 @@ static int nfs4_lock_expired(struct nfs4_state *state, struct file_lock *request
 		if (test_bit(NFS_DELEGATED_STATE, &state->flags) != 0)
 			return 0;
 		err = _nfs4_do_setlk(state, F_SETLK, request, 0);
-		if (err != -NFS4ERR_DELAY)
-			break;
-		nfs4_handle_exception(server, err, &exception);
+		switch (err) {
+		default:
+			goto out;
+		case -NFS4ERR_GRACE:
+		case -NFS4ERR_DELAY:
+			nfs4_handle_exception(server, err, &exception);
+			err = 0;
+		}
 	} while (exception.retry);
+out:
 	return err;
 }
 
