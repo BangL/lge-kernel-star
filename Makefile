@@ -221,8 +221,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -pipe
-HOSTCXXFLAGS = -Ofast -pipe
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
+HOSTCXXFLAGS = -O2
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -323,12 +323,12 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-MODFLAGS  = -DMODULE -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -mfloat-abi=softfp -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2
-CFLAGS_MODULE   = $(MODFLAGS) -pipe
+MODFLAGS	= -DMODULE
+CFLAGS_MODULE   = $(MODFLAGS)
 AFLAGS_MODULE   = $(MODFLAGS)
 LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
-CFLAGS_KERNEL  = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -pipe -mfloat-abi=softfp -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2
-AFLAGS_KERNEL  = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -mfloat-abi=softfp -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2
+CFLAGS_KERNEL	=
+AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
 # 20100705, ,[LGE_START]
@@ -527,7 +527,7 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -Ofast
+KBUILD_CFLAGS	+= -O2
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
@@ -542,7 +542,7 @@ KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
 endif
 
 # This warning generated too much noise in a regular build.
-KBUILD_CFLAGS += $(call cc-option, cc-disable-warning, -Wno-unused-but-set-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
 
 ifdef CONFIG_FRAME_POINTER
 KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
