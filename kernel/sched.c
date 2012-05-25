@@ -75,7 +75,7 @@
 #include <asm/tlb.h>
 #include <asm/irq_regs.h>
 
-#include <linux/ironkrnl.h>
+#include <linux/skynet.h>
 
 #include "sched_cpupri.h"
 #include "sched_autogroup.h"

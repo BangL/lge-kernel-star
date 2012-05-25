@@ -323,7 +323,7 @@ NvRmPrivClockLimitsInit(NvRmDeviceHandle hRmDevice)
         NVRM_SDRAM_MIN_KHZ;
 
     // Set 3D upper clock boundary with combined Absolute/Scaled limit.
-    s_ClockRangeLimits[NvRmModuleID_3D].MaxKHz = VORK_GPU_FREQ ;
+    s_ClockRangeLimits[NvRmModuleID_3D].MaxKHz = SKYNET_GPU_FREQ ;
 
     NvOsDebugPrintf(
         "gpukhz:%d\n",

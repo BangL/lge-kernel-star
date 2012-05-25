@@ -83,8 +83,7 @@ static void tegra_cpufreq_hotplug(NvRmPmRequest req)
 
 		if (cpu_present(cpu) && !cpu_online(cpu))
 			rc = cpu_up(cpu);
-	} else
-	  if (req & NvRmPmRequest_CpuOffFlag && (policy < NR_CPUS || !policy)) {
+	} else if (req & NvRmPmRequest_CpuOffFlag) {
 		cpu = cpumask_any_but(cpu_online_mask, 0);
 
 		if (cpu_present(cpu) && cpu_online(cpu))

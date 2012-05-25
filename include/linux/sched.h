@@ -91,7 +91,7 @@ struct sched_param {
 #include <linux/kobject.h>
 #include <linux/latencytop.h>
 #include <linux/cred.h>
-#include <linux/ironkrnl.h>
+#include <linux/skynet.h>
 
 #include <asm/processor.h>
 

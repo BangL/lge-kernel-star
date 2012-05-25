@@ -72,13 +72,14 @@ static ssize_t show_total_trans(struct cpufreq_policy *policy, char *buf)
     struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
     if (!stat)
 		return 0;
-	}
 	return sprintf(buf, "%d\n",
 			per_cpu(cpufreq_stats_table, stat->cpu)->total_trans);
 }
 
 static ssize_t show_time_in_state(struct cpufreq_policy *policy, char *buf)
 {
+    ssize_t len = 0;
+    int i;
     struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
     if (!stat)
 		return 0;

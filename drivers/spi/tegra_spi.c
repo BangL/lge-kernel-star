@@ -217,7 +217,6 @@ static int tegra_spi_do_message(struct tegra_spi *spi, struct spi_message *m)
 static void tegra_spi_workerthread(struct work_struct *w)
 {
 	struct tegra_spi *spi;
-	NvRmDfsBusyHint BusyHints[4];
 
 	spi = container_of(w, struct tegra_spi, work);
 
