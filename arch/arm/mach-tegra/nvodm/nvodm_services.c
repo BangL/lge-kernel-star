@@ -144,21 +144,21 @@ NvOdmGpioSetBusState(
     NvOdmServicesGpioHandle hOdmGpio,
     NvOdmGpioPinHandle *hGpioPin,
     NvU32 *PinValue,
-	NvU32 numberOfPins)
+    NvU32 numberOfPins)
 {
-	NvU32 i;
+    NvU32 i;
     NvRmGpioPinState *val = (NvRmGpioPinState *)PinValue;
     NvRmGpioPinHandle *hRmPin = (NvRmGpioPinHandle *)hGpioPin;
     if (hOdmGpio == NULL || hGpioPin == NULL)
         return;
 /*
-	NvOsDebugPrintf( "NvOdmGpioSetBusState: ================\n");
+    NvOsDebugPrintf( "NvOdmGpioSetBusState: ================\n");
     NvOsDebugPrintf( "  BusSize = %d\n", numberOfPins );
-	for( i = 0; i< numberOfPins; i++)
-	{
-		NvOsDebugPrintf( "  Bus[%d], hndl = 0x%x, value = %d\n", i, hRmPin[i], val[i]);
-	}
-	NvOsDebugPrintf( "NvOdmGpioSetBusState: ================\n");
+    for( i = 0; i< numberOfPins; i++)
+    {
+        NvOsDebugPrintf( "  Bus[%d], hndl = 0x%x, value = %d\n", i, hRmPin[i], val[i]);
+    }
+    NvOsDebugPrintf( "NvOdmGpioSetBusState: ================\n");
 */
     NvRmGpioWritePins( hOdmGpio->hGpio, hRmPin, val, numberOfPins);
 }
@@ -829,7 +829,6 @@ NvU32 NvOdmServicesPmuGetHookValue(
     NvU32 value =0;
     NvRmDeviceHandle hRmDev = (NvRmDeviceHandle)handle;
     value = NvRmPmuGetHookAdc(hRmDev);
-    return value;
 }
 #endif
 
@@ -901,16 +900,16 @@ NvOdmServicesPmuGetBatteryData(
 #if defined(CONFIG_MACH_STAR)
 NvBool
 NvOdmServicesPmuUpdateBatteryInfo(
-	NvOdmServicesPmuHandle handle,
-	NvOdmServicesPmuAcLineStatus * pAcStatus,
-	NvU8 * pBatStatus,
-	NvOdmServicesPmuBatteryData * pBatData)
+    NvOdmServicesPmuHandle handle,
+    NvOdmServicesPmuAcLineStatus * pAcStatus,
+    NvU8 * pBatStatus,
+    NvOdmServicesPmuBatteryData * pBatData)
 {
-	return NvRmPmuUpdateBatteryInfo(
-			(NvRmDeviceHandle)handle,
-			(NvRmPmuAcLineStatus *)pAcStatus,
-			pBatStatus,
-			(NvRmPmuBatteryData *)pBatData);
+    return NvRmPmuUpdateBatteryInfo(
+            (NvRmDeviceHandle)handle,
+            (NvRmPmuAcLineStatus *)pAcStatus,
+            pBatStatus,
+            (NvRmPmuBatteryData *)pBatData);
 }
 #endif
 //20100924, , For updating battery information totally  [END]

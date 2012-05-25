@@ -242,8 +242,8 @@ extern "C"
  * If thresholds are set to 0, the values are derived at run time from the
  * characterization data
  */
-#define NVRM_CPU1_ON_MIN_KHZ (0)
-#define NVRM_CPU1_OFF_MAX_KHZ (0)
+#define NVRM_CPU1_ON_MIN_KHZ (503000)
+#define NVRM_CPU1_OFF_MAX_KHZ (216000)
 
 #define NVRM_CPU1_ON_PENDING_MS (1500)
 #define NVRM_CPU1_OFF_PENDING_MS (1000)
@@ -267,8 +267,8 @@ extern "C"
  * ODM should also set a critical threshold to trigger h/w shutdown
  * mechanism.
  */
-#define NVRM_DTT_DEGREES_HIGH           (90L)
-#define NVRM_DTT_DEGREES_LOW            (60L)
+#define NVRM_DTT_DEGREES_HIGH           (120L)
+#define NVRM_DTT_DEGREES_LOW            (85L)
 #define NVRM_DTT_DEGREES_HYSTERESIS     (5L)
 
 #define NVRM_DTT_VOLTAGE_THROTTLE_MV    (NvRmVoltsMaximum)
@@ -284,6 +284,21 @@ extern "C"
 #define NVRM_AP20_LOW_CPU_MV (750)
 /// Core voltage in suspend
 #define NVRM_AP20_SUSPEND_CORE_MV (1000)
+
+/// Core and CPU voltage reliability requirements for some skus
+#define NVRM_AP20_RELIABILITY_CORE_MV(sku) \
+       ((((sku) == 23) || \
+         ((sku) == 24) || \
+         ((sku) == 20) || \
+         ((sku) == 27) || \
+         ((sku) == 28)) ? 1000 : 0)
+
+#define NVRM_AP20_RELIABILITY_CPU_MV(sku) \
+       ((((sku) == 23) || \
+         ((sku) == 24) || \
+         ((sku) == 20) || \
+         ((sku) == 27) || \
+         ((sku) == 28)) ? 850 : 0)
 
 /*****************************************************************************/
 

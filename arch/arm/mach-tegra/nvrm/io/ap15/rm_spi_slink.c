@@ -55,12 +55,6 @@
 #include "nvrm_priv_ap_general.h"
 #include "ap15/ap15rm_private.h"
 
-// LGE_UPDATE_S  -- ebs spi patch 20110706
-#include "nvrm_clocks.h"
-#include "mach/iomap.h" //EBS 0707
-
-// LGE_UPDATE_E  -- ebs spi patch 20110706 
-
 #include "linux/module.h"
 #include "mach/dma.h"
 
@@ -72,25 +66,6 @@
 #define SPI_DEBUG_PRINT(format, args...)
 #endif
 #include "linux/err.h"
-
-// LGE_UPDATE_S  -- ebs spi patch 20110706 EBS SPI_PATCH S 
-#include "linux/delay.h"
-
-#include "linux/io.h"
-
-
-
-static unsigned int enable_synch_boost = 0;
-
-module_param(enable_synch_boost, uint, 0644);
-
-#define DEBUG_SHOW_CLK_BOOST 0
-
-//#define ENABLE_SYNCH_BOOST 1
-//#define EBS_TEST_NVIDIA_SPI
-// LGE_UPDATE_E  -- ebs spi patch 20110706
-
-
 
 // Combined maximum spi/slink controllers
 #define MAX_SPI_SLINK_INSTANCE (MAX_SLINK_CONTROLLERS + MAX_SPI_CONTROLLERS)
@@ -331,48 +306,6 @@ static const NvU32 s_Spi_Trigger[] = {
 #define ResetSemaphoreCount(hSema) \
             while(NvOsSemaphoreWaitTimeout(hSema, 0) != NvError_Timeout)
 
-// EBS 0707
-
-// LGE_UPDATE_S  0707
-static void dump_address(unsigned int Add, unsigned int data_size)
-{
-	 int i;
-	 int offset =0;
-	 unsigned int add = Add;
-	 int size = data_size;
-
-	 pr_err(" Address dump 0x%x and size 0x%x\n",Add, data_size);
-	 for (i =0; i< size/16;++i) {
-		 pr_err("%08x %08x %08x %08x %08x\n",
-			 (add+offset),
-			 readl(IO_ADDRESS(add + offset + 0)),
-			 readl(IO_ADDRESS(add + offset + 4)),
-			 readl(IO_ADDRESS(add + offset + 8)),
-			 readl(IO_ADDRESS(add + offset + 12)));
-			 offset+= 16;
-	 }
-}
-
-static void debug_registers(void)
-{
-	 NvOsDebugPrintf(" NvRm Reports: EMC(%lu)  AHB(%lu)  APB(%lu)  CPU(%lu) \n",
-												NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Emc),
-												NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Ahb),
-												NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Apb),
-												NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Cpu));
-
-	 dump_address(0x6000a000, 0x50);
-	 dump_address(0x6000b000, 0x180);
-	 dump_address(0x60006000, 0x300);
-	 dump_address(0x7000d400, 0x40);
-	 dump_address(0x7000d600, 0x40);
-	 dump_address(0x7000d800, 0x40);
-	 dump_address(0x7000da00, 0x40);
-	 dump_address(0x70000000, 0x100);
-}
-
-// LGE_UPDATE_E  0707
-
 /**
  * Get the interfacing property for the device connected to given chip select Id.
  * Returns whether this is supported or not.
@@ -397,9 +330,6 @@ SpiSlinkGetDeviceInfo(
         pDeviceInfo->CanUseHwBasedCs = NV_FALSE;
         pDeviceInfo->CsHoldTimeInClock = 0;
         pDeviceInfo->CsSetupTimeInClock = 0;
-// EBS // LGE_UPDATE_S  0707		
-        pDeviceInfo->bIgnoreClockBoost = 0;
-// EBS // LGE_UPDATE_S  0707
         return NV_FALSE;
     }
     pDeviceInfo->SignalMode = pSpiDevInfo->SignalMode;
@@ -407,10 +337,6 @@ SpiSlinkGetDeviceInfo(
     pDeviceInfo->CanUseHwBasedCs = pSpiDevInfo->CanUseHwBasedCs;
     pDeviceInfo->CsHoldTimeInClock = pSpiDevInfo->CsHoldTimeInClock;
     pDeviceInfo->CsSetupTimeInClock = pSpiDevInfo->CsSetupTimeInClock;
-// LGE_UPDATE_S  0707	
-	pDeviceInfo->bIgnoreClockBoost = pSpiDevInfo->bIgnoreClockBoost; // EBS 0707
-// LGE_UPDATE_S  0707
-
     return NV_TRUE;
 }
 
@@ -814,22 +740,11 @@ WaitForTransferCompletion(
         Error = NvOsSemaphoreWaitTimeout(hRmSpiSlink->hSynchSema, WaitTimeOutMS);
     }
 
-// LGE_UPDATE_S  0707
     // If timeout happen then stop all transfer and exit.
- 
-   if ((Error != NvSuccess) && (Error != NvError_Timeout))
-            pr_err("%s(): The sema wait return unexpected error 0x%08X\n",__func__, Error);
-
-    // If non success happen then stop all transfer and exit.
-    if (Error != NvSuccess)
+    if (Error == NvError_Timeout)
     {
-        pr_info("%s(): handling transfer timeout\n", __func__);
 
-        // Return timeout only.
-    	 Error = NvError_Timeout;
-// LGE_UPDATE_S  0707
-
-	pr_err("Spi%d: %dms Timeout Error\n", hRmSpiSlink->InstanceId, WaitTimeOutMS);
+    pr_err("Spi%d: %dms Timeout Error\n", hRmSpiSlink->InstanceId, WaitTimeOutMS);
                //hRmSpiSlink->IsIntDoneDue = NV_TRUE;
         // Disable the data flow first.
         hHwInt->HwSetDataFlowFxn(&hRmSpiSlink->HwRegs,
@@ -1016,42 +931,6 @@ WaitForTransferCompletion(
     return Error;
 }
 
-// LGE_UPDATE_S  0707
-
-#if 1//def EBS_TEST_NVIDIA_SPI
-// LGE_UPDATE_S  -- ebs spi patch 20110706
-
-// return TRUE if the clocks are right = no boost requested, OR
-//                 the requested boost is implemented  OR
-//                 dfs is not running closed loop
-//     cannot check all clocks, since computed busy hints may be out of system range
-//     so just check EMC for now.
-//
-//
-static NvBool IsRequestedBoostInEffect(NvRmSpiHandle hRmSpiSlink)
-{
-    int i;
-    NvRmDfsRunState DfsState=NvRmDfsGetState(hRmSpiSlink->hDevice);
-
-    if((DfsState!=NvRmDfsRunState_ClosedLoop) || (hRmSpiSlink->IsFreqBoosted == NV_FALSE))
-        return NV_TRUE;
-
-    for(i=0;i<sizeof(hRmSpiSlink->BusyHints)/sizeof(hRmSpiSlink->BusyHints[0]);i++)
-    {
-         if(hRmSpiSlink->BusyHints[i].ClockId != NvRmDfsClockId_Emc)
-            continue;
-
-         if( (hRmSpiSlink->BusyHints[i].BusyAttribute == NV_TRUE) && (NvRmPrivDfsGetCurrentKHz(hRmSpiSlink->BusyHints[i].ClockId) < hRmSpiSlink->BusyHints[i].BoostKHz) )
-            return(NV_FALSE);
-    }
-
-    return(NV_TRUE);
-}
-#endif
-// LGE_UPDATE_E  -- ebs spi patch 20110706
-
-
-
 /**
  * Register the spi interrupt.
  * Thread safety: Caller responsibity.
@@ -1074,114 +953,31 @@ RegisterSpiSlinkInterrupt(
             &hIntHandlers, hRmSpiSlink, &hRmSpiSlink->SpiInterruptHandle, NV_TRUE));
 }
 
-// LGE_UPDATE_S  0707
-
 // Boosting the Emc/Ahb/Apb/Cpu frequency
-static void
-BoostFrequency(
-    NvRmSpiHandle hRmSpiSlink,
-    NvU32 ChipSelectId,
-    NvBool IsBoost,
-    NvU32 TransactionSize,
-    NvU32 ClockSpeedInKHz)
-
+static void BoostFrequency(NvRmSpiHandle hRmSpiSlink, NvBool IsBoost, NvU32 TransactionSize, NvU32 ClockSpeedInKHz)
 {
-// EBS START 20110707
-	 if (hRmSpiSlink->DeviceInfo[ChipSelectId].bIgnoreClockBoost == NV_TRUE)
-		  return;
-
     if (IsBoost)
     {
         if (TransactionSize > hRmSpiSlink->HwRegs.MaxWordTransfer)
         {
             if (!(hRmSpiSlink->IsPmuInterface))
             {
-
-		        NvU32 Timeout = 10;
-
                 hRmSpiSlink->BusyHints[0].BoostKHz = 150000; // Emc
-                hRmSpiSlink->BusyHints[0].BoostDurationMs = Timeout + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
-#if 0
+                hRmSpiSlink->BusyHints[0].BoostDurationMs
+                    = 1000;  //20101218-1, , NVIDIA patch for RxTransfer error  : 10 + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
                 hRmSpiSlink->BusyHints[1].BoostKHz = 150000; // Ahb
-                hRmSpiSlink->BusyHints[1].BoostDurationMs = Timeout + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
-
+                hRmSpiSlink->BusyHints[1].BoostDurationMs
+                    = 1000;  //20101218-1, , NVIDIA patch for RxTransfer error  : 10 + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
                 hRmSpiSlink->BusyHints[2].BoostKHz = 150000; // Apb
-                hRmSpiSlink->BusyHints[2].BoostDurationMs = Timeout + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
-#else
-				hRmSpiSlink->BusyHints[1].BoostKHz = 120000; // Ahb
-		   	    hRmSpiSlink->BusyHints[1].BoostDurationMs = Timeout + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
-
-			    hRmSpiSlink->BusyHints[2].BoostKHz = 120000; // Apb
-			    hRmSpiSlink->BusyHints[2].BoostDurationMs = Timeout + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
-
-#endif
+                hRmSpiSlink->BusyHints[2].BoostDurationMs
+                    = 1000;  //20101218-1, , NVIDIA patch for RxTransfer error  : 10 + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
                 hRmSpiSlink->BusyHints[3].BoostKHz = 600000; // Cpu
-                hRmSpiSlink->BusyHints[3].BoostDurationMs = Timeout + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
-
-#if DEBUG_SHOW_CLK_BOOST
-                pr_info("Boost size=%lu EMC(%lu, %lu, %lu) AHB(%lu, %lu, %lu) APB(%lu, %lu, %lu) CPU(%lu, %lu %lu) \n",
-                                   TransactionSize,
-                                   hRmSpiSlink->BusyHints[0].BoostDurationMs,   // EMC
-                                   NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Emc),
-                                   hRmSpiSlink->BusyHints[0].BoostKHz,
-
-                                   hRmSpiSlink->BusyHints[1].BoostDurationMs,   // AHB
-                                   NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Ahb),
-                                   hRmSpiSlink->BusyHints[1].BoostKHz,
-
-                                   hRmSpiSlink->BusyHints[2].BoostDurationMs,   // APB
-                                   NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Apb),
-                                   hRmSpiSlink->BusyHints[2].BoostKHz,
-
-                                   hRmSpiSlink->BusyHints[3].BoostDurationMs,   // CPU
-                                   NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Cpu),
-                                   hRmSpiSlink->BusyHints[3].BoostKHz
-                               );
-#endif
-
-// EBS END 20110707
+                hRmSpiSlink->BusyHints[3].BoostDurationMs
+                    = 1000;  //20101218-1, , NVIDIA patch for RxTransfer error  : 10 + ((4 * (TransactionSize * 8))) / ClockSpeedInKHz;
                 NvRmPowerBusyHintMulti(hRmSpiSlink->hDevice, hRmSpiSlink->RmPowerClientId,
                                        hRmSpiSlink->BusyHints, 4,
                                        NvRmDfsBusyHintSyncMode_Async);
                 hRmSpiSlink->IsFreqBoosted = NV_TRUE;
-
-// LGE_UPDATE_S  -- ebs spi patch 20110707
-                if( enable_synch_boost )
-                {
-                   // now, block waiting for the clocks to come up
-                   int wait_count = 500;
-#if DEBUG_SHOW_CLK_BOOST
-                   static NvU32 tMax=0;
-                   NvU64 tNow,tStart;
-                   tStart=NvOsGetTimeUS();
-#endif
-
-				while((IsRequestedBoostInEffect(hRmSpiSlink)==NV_FALSE) && wait_count--)
-				{
-					 msleep(1);
-				}
-
-#if DEBUG_SHOW_CLK_BOOST
-                   if(!wait_count)
-                      NvOsDebugPrintf(" Hint Wait Timeout: NvRm Reports: EMC(%lu)  AHB(%lu)  APB(%lu)  CPU(%lu) \n",
-                                               NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Emc),
-                                               NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Ahb),
-                                               NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Apb),
-                                               NvRmPrivDfsGetCurrentKHz(NvRmDfsClockId_Cpu));
-
-                    // show the time spent waiting for the EMC clock to come up, and the max wait time
-                    // note that the overall boost time does not need to be increased for the wait time
-                    // since the expiry of the boost time will not start until the hint is processed
-                    tNow=NvOsGetTimeUS();
-                    tMax=NV_MAX((NvU32)(tNow-tStart), tMax);
-                    NvOsDebugPrintf(" %s Hint Wait Time tMax=%lu  tElapsed=%lu\n", __func__,
-                                                                    tMax,(NvU32)(tNow-tStart));
-#endif
-                 }
-
-// LGE_UPDATE_E  -- ebs spi patch 20110707
-
-					
             }
         }
     }
@@ -1192,13 +988,9 @@ BoostFrequency(
             if (!(hRmSpiSlink->IsPmuInterface))
             {
                 hRmSpiSlink->BusyHints[0].BoostKHz = 0; // Emc
-                hRmSpiSlink->BusyHints[0].BoostDurationMs = 0;
                 hRmSpiSlink->BusyHints[1].BoostKHz = 0; // Ahb
-                hRmSpiSlink->BusyHints[1].BoostDurationMs = 0;
                 hRmSpiSlink->BusyHints[2].BoostKHz = 0; // Apb
-                hRmSpiSlink->BusyHints[2].BoostDurationMs = 0;
                 hRmSpiSlink->BusyHints[3].BoostKHz = 0; // Cpu
-                hRmSpiSlink->BusyHints[3].BoostDurationMs = 0;
                 NvRmPowerBusyHintMulti(hRmSpiSlink->hDevice, hRmSpiSlink->RmPowerClientId,
                                        hRmSpiSlink->BusyHints, 4,
                                        NvRmDfsBusyHintSyncMode_Async);
@@ -2892,9 +2684,7 @@ void NvRmSpiMultipleTransactions(
         TotalTransByte += pTrans->len;
     }
 
-// LGE_UPDATE_S  0707  
-    BoostFrequency(hRmSpi, ChipSelectId, NV_TRUE, TotalTransByte, ClockSpeedInKHz);
-// LGE_UPDATE_S  0707
+    BoostFrequency(hRmSpi, NV_TRUE, TotalTransByte, ClockSpeedInKHz);
 
     hRmSpi->CurrTransInfo.PacketsPerWord = PacketsPerWord;
     if (SpiPinMap)
@@ -2984,10 +2774,6 @@ void NvRmSpiMultipleTransactions(
 
 cleanup:
 
-// LGE_UPDATE_S  0707
-    BoostFrequency(hRmSpi, ChipSelectId, NV_TRUE, TotalTransByte, ClockSpeedInKHz);
-// LGE_UPDATE_S  0707
-
     //  Re-tristate multi-plexed controllers, and re-multiplex the controller.
     if (SpiPinMap)
     {
@@ -3067,10 +2853,8 @@ NvError NvRmSpiTransaction(
     Error = SetPowerControl(hRmSpi, NV_TRUE);
     if (Error != NvSuccess)
         goto cleanup;
-	
-// LGE_UPDATE_S  0707
-    BoostFrequency(hRmSpi, ChipSelectId, NV_TRUE, BytesRequested, ClockSpeedInKHz);
-// LGE_UPDATE_S  0707
+
+    BoostFrequency(hRmSpi, NV_TRUE, BytesRequested, ClockSpeedInKHz);
 
     hRmSpi->CurrTransInfo.PacketsPerWord = PacketsPerWord;
 
@@ -3153,9 +2937,6 @@ NvError NvRmSpiTransaction(
                                    NV_FALSE, NV_FALSE);
 
 cleanup:
-// LGE_UPDATE_S  0707
-    BoostFrequency(hRmSpi, ChipSelectId, NV_FALSE, BytesRequested, 0);
- // LGE_UPDATE_S  0707
 
     //  Re-tristate multi-plexed controllers, and re-multiplex the controller.
     if (SpiPinMap)
@@ -3266,11 +3047,8 @@ NvError NvRmSpiStartTransaction(
 
     // Enable Power/Clock.
     Error = SetPowerControl(hRmSpi, NV_TRUE);
-
-// LGE_UPDATE_S  0707
     if (!Error)
-        BoostFrequency(hRmSpi, ChipSelectId, NV_TRUE, BytesRequested, ClockSpeedInKHz); //EBS 
-// LGE_UPDATE_S  0707
+        BoostFrequency(hRmSpi, NV_TRUE, BytesRequested, ClockSpeedInKHz);
 
     if (!Error)
         Error = SetChipSelectSignalLevel(hRmSpi, ChipSelectId, ClockSpeedInKHz,
@@ -3318,9 +3096,6 @@ NvError NvRmSpiStartTransaction(
 cleanup:
 
     (void)SetChipSelectSignalLevel(hRmSpi, ChipSelectId, ClockSpeedInKHz, NV_FALSE, NV_TRUE);
-// LGE_UPDATE_S  0707
-	  BoostFrequency(hRmSpi, ChipSelectId, NV_FALSE, BytesRequested, 0); //EBS 
-// LGE_UPDATE_S  0707
 
     if (hRmSpi->IsIdleSignalTristate)
         NvRmPinMuxConfigSetTristate(hRmSpi->hDevice,hRmSpi->RmIoModuleId,
@@ -3359,9 +3134,6 @@ NvRmSpiGetTransactionData(
 
     // Disable Power/Clock.
     SetPowerControl(hRmSpiSlink, NV_FALSE);
-// LGE_UPDATE_S  0707
-     BoostFrequency(hRmSpiSlink, hRmSpiSlink->CurrTransferChipSelId, NV_FALSE, BytesRequested, 0); // EBS 
-// LGE_UPDATE_S  0707
     NvOsMutexUnlock(hRmSpiSlink->hChannelAccessMutex);
     return Error;
 }

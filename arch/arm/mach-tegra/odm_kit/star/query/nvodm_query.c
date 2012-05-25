@@ -49,6 +49,7 @@
 #include "tegra_devkit_custopt.h"
 #include "nvodm_keylist_reserved.h"
 #include "nvrm_drf.h"
+#include <linux/skynet.h>
 
 #define NVODM_ENABLE_EMC_DVFS (1)
 
@@ -347,8 +348,8 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmStarSmartphoneHynixEmcConfigTa
     },
     {
                   0x20,   /* Rev 2.0 */
-                300000,   /* SDRAM frquency */
-                  1200,   /* EMC core voltage */
+       SKYNET_DDR_FREQ,   /* SDRAM frquency */
+       SKYNET_EMC_VOLT,   /* EMC core voltage */
                     46,   /* Number of EMC parameters below */
         {
             0x00000012,   /* RC */
@@ -675,8 +676,8 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmStarSmartphoneHynixEmcConfigTa
     },
     {
                   0x20,   /* Rev 2.0 */
-                300000,   /* SDRAM frquency */
-                  1200,   /* EMC core voltage */
+       SKYNET_DDR_FREQ,   /* SDRAM frquency */
+       SKYNET_EMC_VOLT,   /* EMC core voltage */
                     46,   /* Number of EMC parameters below */
         {
 					  0x00000012,	/* RC */
