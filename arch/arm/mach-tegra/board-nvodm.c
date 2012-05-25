@@ -1664,8 +1664,12 @@ static struct platform_device star_wm8994_pdevice =
 #define CARVEOUT_SIZE 128
 #elif defined RAMHACK32
 #define CARVEOUT_SIZE 96
+#elif defined RAMHACK48
+#define CARVEOUT_SIZE 80
 #elif defined RAMHACK64
 #define CARVEOUT_SIZE 64
+#elif defined RAMHACK80
+#define CARVEOUT_SIZE 48
 #elif defined RAMHACK96
 #define CARVEOUT_SIZE 32
 #elif defined RAMHACK112
