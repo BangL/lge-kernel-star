@@ -37,6 +37,8 @@
 
 #define max_screenoff_frequency 503000
 
+#define USE_FAKE_SHMOO
+
 // /mm
 #define vm_dirty_ratio_default 50
 #define dirty_background_ratio_default 30
