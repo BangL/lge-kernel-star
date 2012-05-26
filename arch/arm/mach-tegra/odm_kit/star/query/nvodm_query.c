@@ -1463,25 +1463,8 @@ NvU32 NvOdmQueryMemSize(NvOdmMemoryType MemType)
 
 NvU32 NvOdmQueryCarveoutSize(void)
 {
-
-//RAMHACK: Multiple Carveout settings
-#ifdef RAMHACK0
-    return 0x08000000;
-#elif defined RAMHACK32
-    return 0x06000000;
-#elif defined RAMHACK48
-    return 0x05000000;
-#elif defined RAMHACK64
-    return 0x04000000;
-#elif defined RAMHACK80
-    return 0x03000000;
-#elif defined RAMHACK96
-    return 0x02000000;
-#elif defined RAMHACK104
-    return 0x01800000;
-#elif defined RAMHACK112
-    return 0x01000000;
-#endif
+    // Ramhack
+    return ((128-RAMHACK_SIZE)*SZ_1M);
 }
 
 NvU32 NvOdmQuerySecureRegionSize(void)

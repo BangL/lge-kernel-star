@@ -1659,24 +1659,8 @@ static struct platform_device star_wm8994_pdevice =
 #define RAM_CONSOLE_RESERVED_SIZE 1
 #endif
 
-//RAMHACK: Multiple Carveout settings
-#ifdef RAMHACK0
-#define CARVEOUT_SIZE 128
-#elif defined RAMHACK32
-#define CARVEOUT_SIZE 96
-#elif defined RAMHACK48
-#define CARVEOUT_SIZE 80
-#elif defined RAMHACK64
-#define CARVEOUT_SIZE 64
-#elif defined RAMHACK80
-#define CARVEOUT_SIZE 48
-#elif defined RAMHACK96
-#define CARVEOUT_SIZE 32
-#elif defined RAMHACK104
-#define CARVEOUT_SIZE 24
-#elif defined RAMHACK112
-#define CARVEOUT_SIZE 16
-#endif
+// Ramhack
+#define CARVEOUT_SIZE (128-RAMHACK_SIZE)
 
 #define STAR_RAM_CONSOLE_BASE 	((512-CARVEOUT_SIZE-RAM_CONSOLE_RESERVED_SIZE)*SZ_1M)
 #ifdef CONFIG_MACH_STAR_TMUS

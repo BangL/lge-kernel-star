@@ -1,5 +1,6 @@
 
-#define RAMHACK64
+// Ramhack
+#define RAMHACK_SIZE 64
 
 // Overclock
 #define SKYNET_AVP_FREQ 240000
@@ -18,32 +19,32 @@
 #define SKYNET_BOOT_CLOCK 1100000
 
 #define SKYNET_VOLT_1 775
-#define SKYNET_VOLT_2 775
-#define SKYNET_VOLT_3 800
-#define SKYNET_VOLT_4 850
-#define SKYNET_VOLT_5 950
-#define SKYNET_VOLT_6 1075
-#define SKYNET_VOLT_7 1175
-#define SKYNET_VOLT_8 1275
+#define SKYNET_VOLT_2 800
+#define SKYNET_VOLT_3 850
+#define SKYNET_VOLT_4 875
+#define SKYNET_VOLT_5 900
+#define SKYNET_VOLT_6 1000
+#define SKYNET_VOLT_7 1100
+#define SKYNET_VOLT_8 1200
 
 #define SKYNET_CLOCK_1 216000
-#define SKYNET_CLOCK_2 503000
-#define SKYNET_CLOCK_3 655000
-#define SKYNET_CLOCK_4 912000
-#define SKYNET_CLOCK_5 1100000
-#define SKYNET_CLOCK_6 1312000
-#define SKYNET_CLOCK_7 1408000
-#define SKYNET_CLOCK_8 1504000
+#define SKYNET_CLOCK_2 324000
+#define SKYNET_CLOCK_3 503000
+#define SKYNET_CLOCK_4 655000
+#define SKYNET_CLOCK_5 912000
+#define SKYNET_CLOCK_6 1100000
+#define SKYNET_CLOCK_7 1312000
+#define SKYNET_CLOCK_8 1408000
 
 #define max_screenoff_frequency 503000
 
 #define USE_FAKE_SHMOO
 
 // /mm
-#define vm_dirty_ratio_default 2
-#define dirty_background_ratio_default 4
-#define dirty_writeback_interval_default 300
-#define dirty_expire_interval_default 100
+#define vm_dirty_ratio_default 50
+#define dirty_background_ratio_default 30
+#define dirty_writeback_interval_default 500
+#define dirty_expire_interval_default 300
 #define inactive_file_ratio_default 20
 #define vfs_cache_pressure 100000
 #define default_swappiness 99

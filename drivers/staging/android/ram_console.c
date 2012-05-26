@@ -21,6 +21,7 @@
 #include <linux/string.h>
 #include <linux/uaccess.h>
 #include <linux/io.h>
+#include <linux/skynet.h>
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE_ERROR_CORRECTION
 #include <linux/rslib.h>
@@ -356,7 +357,10 @@ static int ram_console_driver_probe(struct platform_device *pdev)
 #else
        #define RAM_RESERVED_SIZE 100*1024
 #endif
-       reserved_start = start+ buffer_size;
+
+       // Ramhack
+       reserved_start = start+ buffer_size - (RAMHACK_SIZE*SZ_1M);
+
        reserved_buffer = ioremap(reserved_start, RAM_RESERVED_SIZE);
        //memset(reserved_buffer, 0x00, 100*1024);
        printk ("ram console : ram_console virtual addr = 0x%x \n", buffer);
