@@ -40,9 +40,15 @@ rm $ANYK/system/lib/modules/*
 rm $ANYK/kernel/zImage
 
 # copy new kernel
+if [ ! -d $ANYK/kernel ]; then
+    mkdir -p $ANYK/kernel
+fi
 cp arch/arm/boot/zImage $ANYK/kernel/
 
 # copy new modules, no matter which name they have or where they are
+if [ ! -d $ANYK/system/lib/modules ]; then
+    mkdir -p $ANYK/system/lib/modules
+fi
 for i in `find $basedir -path "$ANYK" -prune -o -name "*.ko" -print`
 do
     cp $i $ANYK/system/lib/modules/

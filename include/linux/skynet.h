@@ -35,9 +35,7 @@
 #define SKYNET_CLOCK_7 1408000
 #define SKYNET_CLOCK_8 1504000
 
-//#define max_screenoff_frequency 503000
-
-#define USE_FAKE_SHMOO
+#define max_screenoff_frequency 503000
 
 // /mm
 #define vm_dirty_ratio_default 50
