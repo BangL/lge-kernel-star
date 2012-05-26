@@ -89,12 +89,12 @@ unsigned long vm_dirty_bytes;
 /*
  * The interval between `kupdate'-style writebacks
  */
-unsigned int dirty_writeback_interval = 3 * 100; /* centiseconds */
+unsigned int dirty_writeback_interval = dirty_writeback_interval_default; /* centiseconds */
 
 /*
  * The longest time for which data is allowed to remain dirty
  */
-unsigned int dirty_expire_interval = 100; /* centiseconds */
+unsigned int dirty_expire_interval = dirty_expire_interval_default; /* centiseconds */
 
 /*
  * Flag that makes the machine dump writes/reads and block dirtyings.
