@@ -13,6 +13,6 @@ $L " ";
 
 
 # ksm
-echo 1500 > /sys/kernel/mm/ksm/sleep_millisecs
-echo 256 > /sys/kernel/mm/ksm/pages_to_scan
+echo 4000 > /sys/kernel/mm/ksm/sleep_millisecs
+echo 128 > /sys/kernel/mm/ksm/pages_to_scan
 echo 1 > /sys/kernel/mm/ksm/run
