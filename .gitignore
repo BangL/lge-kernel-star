@@ -61,7 +61,7 @@ include/generated
 # release files
 build/tmp/Skynet/zImage*
 build/tmp/Skynet/files/modules/*
-build/Skynet*.zip
+build/tmp/Skynet*.zip
 
 # stgit generated dirs
 patches-*

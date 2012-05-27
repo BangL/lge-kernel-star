@@ -18,7 +18,7 @@ config="star_cyanogenmod_defconfig"
 
 # function to set a new ramhack value
 sethack() {
-    hack=$1
+    hack="$1"
     awk '/^#define RAMHACK_SIZE/ {print "#define RAMHACK_SIZE '$hack'"; found=1} !/^#define RAMHACK_SIZE/ {print $0} END {if (!found) {print "#define RAMHACK_SIZE '$hack'" }}' include/linux/skynet.h > include/linux/skynet.h.tmp
     cp include/linux/skynet.h.tmp include/linux/skynet.h
     rm include/linux/skynet.h.tmp
@@ -50,7 +50,8 @@ rm build/tmp/Skynet/zImage*
 
 if [ "$buildtype" == "release" ]; then
     # build all versions
-    for hack in "0 32 48 64 80 96"
+    hacks="0 32 48 64 80 96"
+    for hack in $hacks
     do
 
         sethack "$hack"

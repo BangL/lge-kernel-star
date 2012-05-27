@@ -66,7 +66,8 @@ fi
 if [ "$cymo" != "1" ]; then
     fatal "Current ROM not compatible! Aborting."
 fi
-okhack=`echo "0 32 48 64 80 96" | awk '/'$hack'/ { printf "1"; exit 0 }'`
+hacks="0 32 48 64 80 96"
+okhack=`echo $hacks | awk '/'$hack'/ { printf "1"; exit 0 }'`
 if [ "$okhack" == "1" ]; then
     ui_print "Installing $hack MiB hack variant"
 else
