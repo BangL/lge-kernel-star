@@ -1,1 +1,7 @@
-su; tune2fs -o journal_data_writeback /dev/block/mmcblk0p1; tune2fs -O ^has_journal /dev/block/mmcblk0p1; tune2fs -o journal_data_writeback /dev/block/mmcblk0p2; tune2fs -O ^has_journal /dev/block/mmcblk0p2; tune2fs -o journal_data_writeback /dev/block/mmcblk0p8; tune2fs -O ^has_journal /dev/block/mmcblk0p8
+su
+tune2fs -o journal_data_writeback /dev/block/mmcblk0p1
+tune2fs -O ^has_journal /dev/block/mmcblk0p1
+tune2fs -o journal_data_writeback /dev/block/mmcblk0p2
+tune2fs -O ^has_journal /dev/block/mmcblk0p2
+tune2fs -o journal_data_writeback /dev/block/mmcblk0p8
+tune2fs -O ^has_journal /dev/block/mmcblk0p8

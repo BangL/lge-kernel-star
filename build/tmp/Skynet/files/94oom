@@ -1,1 +1,4 @@
-chmod 644 /sys/module/lowmemorykiller/parameters/adj; chmod 644 /sys/module/lowmemorykiller/parameters/minfree;echo "0,3,6,8,12,16" > /sys/module/lowmemorykiller/parameters/adj; echo "4096,6144,14080,23040,25600,28160" > /sys/module/lowmemorykiller/parameters/minfree
+chmod 644 /sys/module/lowmemorykiller/parameters/adj
+chmod 644 /sys/module/lowmemorykiller/parameters/minfree
+echo "0,3,6,8,12,16" > /sys/module/lowmemorykiller/parameters/adj
+echo "4096,6144,14080,23040,25600,28160" > /sys/module/lowmemorykiller/parameters/minfree

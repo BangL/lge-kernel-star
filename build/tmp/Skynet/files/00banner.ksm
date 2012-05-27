@@ -10,3 +10,8 @@ $L " __ __ _ ___  _ _  __  ___  __ _ _  _  _  __  __))";
 $L "((_ \\(/'((_( ((\\( ((_)((_( (('((\\( ((\`1( ((_)((_( ";
 $L "     ))                 _))";
 $L " ";
+
+# ksm
+echo 4000 > /sys/kernel/mm/ksm/sleep_millisecs
+echo 128 > /sys/kernel/mm/ksm/pages_to_scan
+echo 1 > /sys/kernel/mm/ksm/run

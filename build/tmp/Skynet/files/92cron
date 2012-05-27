@@ -1,1 +1,2 @@
-su; crond -l 0 -L /data/cron/data.log -c /data/cron/crontabs
+su
+crond -l 0 -L /data/cron/data.log -c /data/cron/crontabs

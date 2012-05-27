@@ -188,10 +188,6 @@ ui_print ""
 ###########################################################
 ui_print "-- Tweaks --"
 
-chmod 777 /system/bin/compcache
-cp $basedir/files/compcache /system/bin/compcache
-chmod 775 /system/bin/compcache
-
 if [ "$basic" != "1" ]; then
     ui_print "Cleaning up init.d scripts ..."
     cp /system/etc/init.d/01sysctl $basedir/files/
@@ -219,14 +215,16 @@ if [ "$basic" != "1" ]; then
     touch /system/etc/.root_browser
     cp $basedir/files/90mmcblk0 /system/etc/init.d/90mmcblk0
     cp $basedir/files/91mmcblk1 /system/etc/init.d/91mmcblk1
-    cp $basedir/files/92cron /system/etc/init.d/92cron
     cp $basedir/files/94oom /system/etc/init.d/94oom
     cp $basedir/files/98vm /system/etc/init.d/98vm
     chmod 775 /system/etc/init.d/90mmcblk0
     chmod 775 /system/etc/init.d/91mmcblk1
-    chmod 775 /system/etc/init.d/92cron
     chmod 775 /system/etc/init.d/94oom
     chmod 775 /system/etc/init.d/98vm
+    
+    chmod 777 /system/bin/compcache
+    cp $basedir/files/compcache /system/bin/compcache
+    chmod 775 /system/bin/compcache
 fi
 
 if [ "$cron" != "1" ]; then
@@ -259,6 +257,9 @@ fi
 
 if [ "$ksm" != "1" ]; then
     ui_print "Enabling kernel samepage merging ..."
+    cp $basedir/files/00banner.ksm /system/etc/init.d/00banner
+    chmod 775 /system/etc/init.d/00banner
+else
     cp $basedir/files/00banner /system/etc/init.d/00banner
     chmod 775 /system/etc/init.d/00banner
 fi
