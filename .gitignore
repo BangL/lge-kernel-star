@@ -57,9 +57,11 @@ include/linux/utsrelease.h
 include/linux/bounds.h
 arch/arm/mach-msm/smd_rpc_sym.c
 include/generated
-build/kernel/zImage
-build/system/lib/modules/*
-build/release.zip
+
+# release files
+build/tmp/Skynet/zImage*
+build/tmp/Skynet/files/modules/*
+build/Skynet*.zip
 
 # stgit generated dirs
 patches-*

@@ -1,0 +1,28 @@
+
+
+ramhacks:
+0           Everything is working
+32          Everything is working
+48          Everything is working
+64          1080p video recording/playback doesn't work
+80          1080p video recording/playback and some very heavy 3D games doesn't work (Chainfire3D texture resolution adjust help)
+96          1080/720p video recording/playback, and many 3D games doesn't work (Chainfire3D texture resolution adjust help)
+
+
+flags:
+-anim       Disable installation of bangmod bootanimation
+-basic      Disable even the most basic tweaks
+-bravia     Enable installation of sony bravia engine
+-cam        Enable installation of modded stock cam by kostja
+-cron       Disable installation of cron job for automatic cache dropping
+-font       Disable installation of roboto font
+-gapps      Disable installation of google apps
+-jrnl       Enable ext4 journal removal and 'risky' mount options (not recommended)
+-keep       Disable deletion of unnecessary CM apps
+-ksm        Disable activation of kernel samepage merging
+-log        Enable log removal on boot
+-nitz       Install nitz fix for su660 basebands (will get removed if not set)
+-prop       Disable tweaking of build.prop
+-sql        Disable installation of tweaked sqlite.so
+-uv         Enable slight undervolt
+

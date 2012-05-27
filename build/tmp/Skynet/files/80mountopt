@@ -1,0 +1,1 @@
+su; mount -o remount,noatime,nodiratime,data=writeback,nobh,barrier=0,commit=150,noauto_da_alloc /dev/block/mmcblk0p2; mount -o remount,noatime,nodiratime,data=writeback,barrier=0,nobh,commit=180,noauto_da_alloc /dev/block/mmcblk0p1; mount -o remount,noatime,nodiratime,data=writeback,barrier=0,nobh,nosuid,nodev,commit=120,noauto_da_alloc /dev/block/mmcblk0p8

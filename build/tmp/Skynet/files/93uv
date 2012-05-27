@@ -1,0 +1,1 @@
+su; echo "0 0 25 25 25 0 0 25 " > /sys/devices/system/cpu/cpu0/cpufreq/UV_mV_table

@@ -1,0 +1,2 @@
+# Periodically drop caches every 3h30m
+30 */3 * * * date >> /data/cron/cachedrop.log; free | head -n 2 >> /data/cron/cachedrop.log; sync; echo 3 > /proc/sys/vm/drop_caches; free | grep Mem: >> /data/cron/cachedrop.log
