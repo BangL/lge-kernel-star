@@ -52,11 +52,11 @@
 #define VM_MIN_READAHEAD 16
 
 // Scheduler
-#define sysctl_sched_latency_default 6000000ULL
-#define normalized_sysctl_sched_latency_default 6000000ULL
-#define sysctl_sched_min_granularity_default 750000ULL
-#define normalized_sysctl_sched_min_granularity_default 750000ULL
-#define sched_nr_latency_default 8
+#define sysctl_sched_latency_default 5000000ULL
+#define normalized_sysctl_sched_latency_default 5000000ULL
+#define sysctl_sched_min_granularity_default 100000ULL
+#define normalized_sysctl_sched_min_granularity_default 100000ULL
+#define sched_nr_latency_default 5
 #define sysctl_sched_wakeup_granularity_default 1000000UL
 #define normalized_sysctl_sched_wakeup_granularity_default 1000000UL
 #define CFS_BOOST
