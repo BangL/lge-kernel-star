@@ -97,7 +97,9 @@ curflag=bravia; parse_flag; bravia=$fvalue      # enable installation of sony br
 curflag=cam; parse_flag; cam=$fvalue            # enable installation of modded stock cam by kostja
 curflag=cron; parse_flag; cron=$fvalue          # disable installation of cron job for automatic cache dropping
 curflag=font; parse_flag; font=$fvalue          # disable installation of roboto font
-curflag=fsync; parse_flag; fsync=$fvalue        # disable fsync
+curflag=ffc; parse_flag; ffc=$fvalue            # Force fast charging
+curflag=fsync; parse_flag; fsync=$fvalue        # disable fsync syscalls
+curflag=fsc; parse_flag; fsc=$fvalue            # Force slow charging
 curflag=gapps; parse_flag; gapps=$fvalue        # disable installation of google apps
 curflag=jrnl; parse_flag; jrnl=$fvalue          # enable ext4 journal removal and 'risky' mount options (not recommended)
 curflag=keep; parse_flag; keep=$fvalue          # disable deletion of unnecessary CM apps
@@ -257,10 +259,23 @@ if [ "$log" == "1" ]; then
     chmod 775 /system/etc/init.d/02rmlog
 fi
 
+if [ "$ffc" == "1" && "$ffc" == "1" ]; then
+    ui_print "WARNING: You cannot force fast and slow charging at the same time!"
+    warning=$((warning + 1))
+elif [ "$ffc" == "1" ]; then
+    ui_print "Installing script to force fast charging ..."
+    cp $basedir/files/07ffc /system/etc/init.d/07ffc
+    chmod 775 /system/etc/init.d/07ffc
+elif [ "$log" == "1" ]; then
+    ui_print "Installing script to force slow charging ..."
+    cp $basedir/files/07fsc /system/etc/init.d/07fsc
+    chmod 775 /system/etc/init.d/07fsc
+fi
+
 if [ "$fsync" == "1" ]; then
     ui_print "Disabling fsync ..."
-    cp $basedir/files/99fsync /system/etc/init.d/99fsync
-    chmod 775 /system/etc/init.d/99fsync
+    cp $basedir/files/08fsync /system/etc/init.d/08fsync
+    chmod 775 /system/etc/init.d/08fsync
 fi
 
 if [ "$ksm" != "1" ]; then
