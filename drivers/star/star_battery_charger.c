@@ -112,13 +112,13 @@
 #endif
 
 #if 0
-#define STAR_TEMPERATURE_CRITICAL_OVERHEAT	550
-#define STAR_TEMPERATURE_OVERHEAT		520
-#define STAR_TEMPERATURE_TO_USB_500	450
+#define STAR_TEMPERATURE_CRITICAL_OVERHEAT  550
+#define STAR_TEMPERATURE_OVERHEAT    520
+#define STAR_TEMPERATURE_TO_USB_500  450
 #else
-#define STAR_TEMPERATURE_CRITICAL_OVERHEAT	460
-#define STAR_TEMPERATURE_OVERHEAT	450
-#define STAR_TEMPERATURE_TO_USB_500	400
+#define STAR_TEMPERATURE_CRITICAL_OVERHEAT  460
+#define STAR_TEMPERATURE_OVERHEAT  450
+#define STAR_TEMPERATURE_TO_USB_500  400
 #endif
 
 typedef enum {
@@ -880,7 +880,7 @@ static void true_valid_cbc_process(NvU32 cbc_value)
 
 	if( batt_dev->BatteryLifePercent !=104 )									// at first process, do not update
 		previous_guage= batt_dev->BatteryLifePercent;		// save previous value
-
+		
 	batt_dev->CBC_Value = cbc_value;
 
 	if (cbc_value <= 0)
@@ -901,7 +901,7 @@ static void true_valid_cbc_process(NvU32 cbc_value)
 		batt_dev->BatteryLifePercent = previous_guage;
 	}
 	printk("[BATT] final value = %d\n", batt_dev->BatteryLifePercent);
-
+	
 	star_battery_data_onetime_update(Update_Battery_Data);
 }
 
@@ -1057,7 +1057,7 @@ static void valid_cbc_check_and_process(NvU32 cbc_value)
 			{
 				batt_dev->BatteryLifePercent = previous_guage ;
 			}
-
+			
 			star_battery_data_onetime_update(Update_Battery_Data);
 		}
 	}
@@ -1698,7 +1698,7 @@ static int tegra_battery_get_property(struct power_supply *psy,
 			break;
 
 		case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-			val->intval = batt_dev->batt_vol * 1000;
+			val->intval = batt_dev->batt_vol * STAR_VOLT_UNIT;
 			//LDB("[bat_poll] intval: POWER_SUPPLY_PROP_VOLTAGE_NOW(%d)", val->intval);
 			break;
 
@@ -2672,7 +2672,7 @@ static void star_battery_data_onetime_update(NvU8 update_option)
 	}
 	star_debug_show_battery_status();
 }
-
+	
 // LGE_CHANGE_S  2011-09-02, disable power notification during FOTA upgrade
 
 void disable_power_supply_change_notification(void)
@@ -2690,7 +2690,7 @@ void enable_power_supply_change_notification(void)
 EXPORT_SYMBOL(enable_power_supply_change_notification);
 
 // LGE_CHANGE_E  2011-09-02, disable power notification during FOTA upgrade
-
+	
 /*
 static void star_battery_charge_done_work(struct work_struct *work)
 {
@@ -3490,7 +3490,7 @@ static struct platform_driver star_battery_charger_driver =
 static int __init tegra_battery_init(void)
 {
 	LDB("");
-
+	
 	platform_driver_register(&star_battery_charger_driver);
 	return 0;
 }
@@ -3515,7 +3515,7 @@ __setup("array_tp_boot=", array_tp_boot_state);
 static void __exit tegra_battery_exit(void)
 {
 	LDB("");
-
+	
 	platform_driver_unregister(&star_battery_charger_driver);
 }
 
