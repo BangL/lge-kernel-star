@@ -1,3 +1,5 @@
+#!/system/bin/sh
+
 chmod 644 /sys/module/lowmemorykiller/parameters/adj
 chmod 644 /sys/module/lowmemorykiller/parameters/minfree
 echo "0,3,6,8,12,16" > /sys/module/lowmemorykiller/parameters/adj

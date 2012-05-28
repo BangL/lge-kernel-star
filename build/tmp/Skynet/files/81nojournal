@@ -1,4 +1,5 @@
-su
+#!/system/bin/sh
+
 tune2fs -o journal_data_writeback /dev/block/mmcblk0p1
 tune2fs -O ^has_journal /dev/block/mmcblk0p1
 tune2fs -o journal_data_writeback /dev/block/mmcblk0p2
