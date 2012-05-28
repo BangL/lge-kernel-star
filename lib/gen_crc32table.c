@@ -1,5 +1,12 @@
 #include <stdio.h>
+
+#include "../include/linux/version.h"
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)
+#include "../include/linux/autoconf.h"
+#else
 #include "../include/generated/autoconf.h"
+#endif
+
 #include "crc32defs.h"
 #include <inttypes.h>
 
