@@ -97,6 +97,7 @@ curflag=bravia; parse_flag; bravia=$fvalue      # enable installation of sony br
 curflag=cam; parse_flag; cam=$fvalue            # enable installation of modded stock cam by kostja
 curflag=cron; parse_flag; cron=$fvalue          # disable installation of cron job for automatic cache dropping
 curflag=font; parse_flag; font=$fvalue          # disable installation of roboto font
+curflag=fsync; parse_flag; fsync=$fvalue        # disable fsync
 curflag=gapps; parse_flag; gapps=$fvalue        # disable installation of google apps
 curflag=jrnl; parse_flag; jrnl=$fvalue          # enable ext4 journal removal and 'risky' mount options (not recommended)
 curflag=keep; parse_flag; keep=$fvalue          # disable deletion of unnecessary CM apps
@@ -253,6 +254,13 @@ fi
 if [ "$log" == "1" ]; then
     ui_print "Enabling syslog deletion on boot ..."
     cp $basedir/files/02rmlog /system/etc/init.d/02rmlog
+    chmod 775 /system/etc/init.d/02rmlog
+fi
+
+if [ "$fsync" == "1" ]; then
+    ui_print "Disabling fsync ..."
+    cp $basedir/files/99fsync /system/etc/init.d/99fsync
+    chmod 775 /system/etc/init.d/99fsync
 fi
 
 if [ "$ksm" != "1" ]; then

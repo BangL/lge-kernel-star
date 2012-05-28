@@ -16,6 +16,7 @@ flags:
 -cam        Enable installation of modded stock cam by kostja
 -cron       Disable installation of cron job for automatic cache dropping
 -font       Disable installation of roboto font
+-fsync      Disable fsync syscalls
 -gapps      Disable installation of google apps
 -jrnl       Enable ext4 journal removal and 'risky' mount options (not recommended)
 -keep       Disable deletion of unnecessary CM apps
