@@ -224,10 +224,6 @@ if [ "$basic" != "1" ]; then
     chmod 775 /system/etc/init.d/91mmcblk1
     chmod 775 /system/etc/init.d/94oom
     chmod 775 /system/etc/init.d/98vm
-    
-    chmod 777 /system/bin/compcache
-    cp $basedir/files/compcache /system/bin/compcache
-    chmod 775 /system/bin/compcache
 fi
 
 if [ "$cron" != "1" ]; then

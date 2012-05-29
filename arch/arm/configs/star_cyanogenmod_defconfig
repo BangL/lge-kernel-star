@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.59
-# Mon May 28 22:30:45 2012
+# Tue May 29 15:38:32 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -43,7 +43,7 @@ CONFIG_HAVE_KERNEL_XZ=y
 # CONFIG_KERNEL_BZIP2 is not set
 # CONFIG_KERNEL_LZMA is not set
 CONFIG_KERNEL_XZ=y
-# CONFIG_SWAP is not set
+CONFIG_SWAP=y
 # CONFIG_SYSVIPC is not set
 # CONFIG_POSIX_MQUEUE is not set
 # CONFIG_BSD_PROCESS_ACCT is not set
@@ -1554,7 +1554,7 @@ CONFIG_ANDROID_LOW_MEMORY_KILLER=y
 #
 # CONFIG_RAR_REGISTER is not set
 # CONFIG_IIO is not set
-# CONFIG_ZRAM is not set
+CONFIG_ZRAM=y
 CONFIG_SNAPPY_COMPRESS=y
 CONFIG_SNAPPY_DECOMPRESS=y
 
