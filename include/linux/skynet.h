@@ -40,11 +40,11 @@
 
 #define USE_FAKE_SHMOO
 
-// /mm
+// mm
 #define vm_dirty_ratio_default 50
 #define dirty_background_ratio_default 30
-#define dirty_writeback_interval_default 500
-#define dirty_expire_interval_default 300
+#define dirty_writeback_interval_default 3000
+#define dirty_expire_interval_default 10000
 #define inactive_file_ratio_default 20
 #define vfs_cache_pressure 100000
 #define default_swappiness 99
