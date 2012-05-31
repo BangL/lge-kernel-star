@@ -221,8 +221,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
-HOSTCXXFLAGS = -O2
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -pipe
+HOSTCXXFLAGS = -Ofast -pipe
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -323,11 +323,12 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   = -DMODULE -mtune=cortex-a9 -march=armv7-a -mfpu=vfpv3-d16 -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-vectorize -fipa-cp-clone -fsingle-precision-constant -pipe
-AFLAGS_MODULE   =
-LDFLAGS_MODULE  =
-CFLAGS_KERNEL	= -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-vectorize -fipa-cp-clone -fsingle-precision-constant -pipe
-AFLAGS_KERNEL	=
+MODFLAGS  = -DMODULE -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -mfloat-abi=softfp -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -fpredictive-commoning -fgcse-after-reload -fipa-cp-clone -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2
+CFLAGS_MODULE   = $(MODFLAGS) -pipe
+AFLAGS_MODULE   = $(MODFLAGS)
+LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
+CFLAGS_KERNEL  = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -pipe -mfloat-abi=softfp -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -fpredictive-commoning -fgcse-after-reload -fipa-cp-clone -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2
+AFLAGS_KERNEL  = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=vfpv3-d16 -ftree-vectorize -ffast-math -fsingle-precision-constant -mfloat-abi=softfp -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -funswitch-loops -fpredictive-commoning -fgcse-after-reload -fipa-cp-clone -funsafe-loop-optimizations -funsafe-math-optimizations -fbranch-target-load-optimize2
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
 # 20100705, ,[LGE_START]
@@ -348,11 +349,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks \
-                   -mfpu=vfpv3-d16 \
-                   -mtune=cortex-a9
-KBUILD_AFLAGS_KERNEL :=
-KBUILD_CFLAGS_KERNEL :=
+		   -fno-delete-null-pointer-checks
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
@@ -530,7 +527,7 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -Ofast
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
@@ -545,7 +542,7 @@ KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
 endif
 
 # This warning generated too much noise in a regular build.
-KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
+KBUILD_CFLAGS += $(call cc-option, cc-disable-warning, -Wno-unused-but-set-variable)
 
 ifdef CONFIG_FRAME_POINTER
 KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls

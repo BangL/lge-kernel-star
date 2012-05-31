@@ -35,7 +35,7 @@ sethack() {
 
 compile_kernel() {
     cp arch/arm/configs/$config .config
-    make ARCH=arm CROSS_COMPILE=$CCOMPILER oldconfig 
+    make ARCH=arm CROSS_COMPILE=$CCOMPILER oldconfig
     make ARCH=arm CROSS_COMPILE=$CCOMPILER -j`grep 'processor' /proc/cpuinfo | wc -l`
     cp arch/arm/boot/zImage build/tmp/Skynet/zImage"$1"
 }
