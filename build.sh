@@ -1,8 +1,11 @@
 #!/bin/bash
 
+cd $PWD
+buildtype=$1
 
-# compiler
-EABI="${HOME}/android/system/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin"
+# toolchain
+EABI="${HOME}/android/kernel/toolchain/toolchain/bin"
+export CCOMPILER=${EABI}/arm-eabi-
 
 # config
 config="star_cyanogenmod_defconfig"
@@ -15,6 +18,12 @@ config="star_cyanogenmod_defconfig"
 #-----------------------------
 # Do not edit below this
 #-----------------------------
+
+# check for valid toolchain
+if [ ! -d "$EABI" ]; then
+    echo "ERROR: $EABI is not a directory!"
+    exit 1
+fi
 
 # function to set a new ramhack value
 sethack() {
@@ -30,12 +39,6 @@ compile_kernel() {
     make ARCH=arm CROSS_COMPILE=$CCOMPILER -j`grep 'processor' /proc/cpuinfo | wc -l`
     cp arch/arm/boot/zImage build/tmp/Skynet/zImage"$1"
 }
-
-cd $PWD
-buildtype=$1
-
-# define the compiler to use
-export CCOMPILER=${EABI}/arm-eabi-
 
 # prepare modules directory
 if [ ! -d build/tmp/Skynet/files/modules ]; then
@@ -73,10 +76,12 @@ do
 done
 
 # pack the new build
+echo "Packing new kernel ..."
 now=`date +%Y%m%d%H%M`
 rm build/*.zip
 cd build || exit
-zip -r Skynet64_$now-bravia-cam-log-uv.zip .
+zip -r Skynet64_$now-bravia-cam-log-uv.zip . > /dev/null
 cd ..
+echo "Done."
 
 exit 0
