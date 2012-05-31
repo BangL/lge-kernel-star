@@ -23,7 +23,7 @@ SCHED_FEAT(NORMALIZED_SLEEPER, 0)
  * Place new tasks ahead so that they do not starve already running
  * tasks
  */
-SCHED_FEAT(START_DEBIT, 0)
+SCHED_FEAT(START_DEBIT, 1)
 
 /*
  * Should wakeups try to preempt running tasks.
