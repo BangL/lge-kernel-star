@@ -50,6 +50,7 @@
 #include "nvodm_keylist_reserved.h"
 #include "nvrm_drf.h"
 #include <linux/kernel.h>
+#include <linux/skynet.h>
 
 #define NVODM_ENABLE_EMC_DVFS (1)
 
