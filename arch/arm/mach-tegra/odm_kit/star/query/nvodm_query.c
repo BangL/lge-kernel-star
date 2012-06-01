@@ -49,8 +49,7 @@
 #include "tegra_devkit_custopt.h"
 #include "nvodm_keylist_reserved.h"
 #include "nvrm_drf.h"
-#include <linux/io.h>
-#include <linux/skynet.h>
+#include <linux/kernel.h>
 
 #define NVODM_ENABLE_EMC_DVFS (1)
 
@@ -1464,8 +1463,15 @@ NvU32 NvOdmQueryMemSize(NvOdmMemoryType MemType)
 
 NvU32 NvOdmQueryCarveoutSize(void)
 {
-    //20100802  increase carveout memory
+    //20100802 taewan.kim@lge.com increase carveout memory
+#if 0
     return 0x08000000; // 128 MB <- 64MB
+#else
+    extern unsigned int nvmap_carveout_size;
+    /* carveout size is controled by the nvmem boot param. nvmem=128M is default for LG Star */
+    printk(KERN_INFO "%s: nvmap_carveout_size=%d\n", __func__, nvmap_carveout_size);
+    return nvmap_carveout_size;
+#endif
 }
 
 NvU32 NvOdmQuerySecureRegionSize(void)
