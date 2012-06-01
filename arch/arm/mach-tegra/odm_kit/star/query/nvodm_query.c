@@ -1464,8 +1464,8 @@ NvU32 NvOdmQueryMemSize(NvOdmMemoryType MemType)
 
 NvU32 NvOdmQueryCarveoutSize(void)
 {
-    // Ramhack
-    return ((128-RAMHACK_SIZE)*SZ_1M);
+    //20100802  increase carveout memory
+    return 0x08000000; // 128 MB <- 64MB
 }
 
 NvU32 NvOdmQuerySecureRegionSize(void)

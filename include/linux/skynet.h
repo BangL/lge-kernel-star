@@ -1,7 +1,4 @@
 
-// Ramhack
-#define RAMHACK_SIZE 64
-
 // Overclock
 #define SKYNET_AVP_FREQ 240000
 #define SKYNET_VDE_FREQ SKYNET_AVP_FREQ
