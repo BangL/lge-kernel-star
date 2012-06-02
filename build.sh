@@ -1,8 +1,5 @@
 #!/bin/bash
 
-cd $PWD
-buildtype=$1
-
 # toolchain
 EABI="${HOME}/android/kernel/toolchain/toolchain/bin"
 export CCOMPILER=${EABI}/arm-eabi-
@@ -19,6 +16,8 @@ config="star_cyanogenmod_defconfig"
 # Do not edit below this
 #-----------------------------
 
+cd $PWD
+
 # check for valid toolchain
 if [ ! -d "$EABI" ]; then
     echo "ERROR: $EABI is not a directory!"
@@ -30,10 +29,8 @@ if [ ! -d build/tmp/Skynet/files/modules ]; then
     mkdir -p build/tmp/Skynet/files/modules
 fi
 
-# remove old modules
+# cleanup
 rm build/tmp/Skynet/files/modules/*
-
-# remove old kernel builds
 rm build/tmp/Skynet/zImage
 rm arch/arm/boot/zImage
 
@@ -42,7 +39,19 @@ cp arch/arm/configs/$config .config
 make ARCH=arm CROSS_COMPILE=$CCOMPILER oldconfig
 
 # build new kernel
-make ARCH=arm CROSS_COMPILE=$CCOMPILER -j`grep 'processor' /proc/cpuinfo | wc -l`
+echo "Building new kernel ..."
+make ARCH=arm CROSS_COMPILE=$CCOMPILER -j`grep 'processor' /proc/cpuinfo | wc -l` > compile.log 2>&1
+
+if [ ! -e arch/arm/boot/zImage ]; then
+    echo "Build failed:"
+    tail -n 50 compile.log
+    echo "Read the full compile.log file if this excerpt doesn't give enough information."
+    exit 1
+fi
+
+echo "Done."
+
+# copy new kernel
 cp arch/arm/boot/zImage build/tmp/Skynet/zImage
 
 # copy new modules, no matter which name they have or where they are
