@@ -26,29 +26,9 @@ set -f
 LC_ALL=C
 export LC_ALL
 
-if [ -z "$KBUILD_BUILD_VERSION" ]; then
-	if [ -r .version ]; then
-		VERSION=`cat .version`
-	else
-		VERSION=0
-		echo 0 > .version
-	fi
-else
-	VERSION=$KBUILD_BUILD_VERSION
-fi
-
-if [ -z "$KBUILD_BUILD_TIMESTAMP" ]; then
-	TIMESTAMP=`date`
-else
-	TIMESTAMP=$KBUILD_BUILD_TIMESTAMP
-fi
-
-DATETODAY=`date +"%Y%m%d"`
-UTS_VERSION="$DATETODAY#$VERSION"
 CONFIG_FLAGS=""
 if [ -n "$SMP" ] ; then CONFIG_FLAGS="SMP"; fi
 if [ -n "$PREEMPT" ] ; then CONFIG_FLAGS="$CONFIG_FLAGS PREEMPT"; fi
-UTS_VERSION="$UTS_VERSION $CONFIG_FLAGS $TIMESTAMP"
 
 # Truncate to maximum length
 
@@ -57,12 +37,12 @@ UTS_TRUNCATE="cut -b -$UTS_LEN"
 
 # Generate a temporary compile.h
 
-( echo /\* This file is auto generated, version $VERSION \*/
+( echo /\* This file is auto generated \*/
   if [ -n "$CONFIG_FLAGS" ] ; then echo "/* $CONFIG_FLAGS */"; fi
   
   echo \#define UTS_MACHINE \"$ARCH\"
 
-  echo \#define UTS_VERSION \"`echo $UTS_VERSION | $UTS_TRUNCATE`\"
+  echo \#define UTS_VERSION \"$CONFIG_FLAGS\"
 
   echo \#define LINUX_COMPILE_TIME \"`date +%T`\"
   echo \#define LINUX_COMPILE_BY \"MisjudgedTwat\"

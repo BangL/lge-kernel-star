@@ -7,9 +7,7 @@ export CCOMPILER=${EABI}/arm-eabi-
 # config
 config="star_cyanogenmod_defconfig"
 
-
-
-
+version="$1"
 
 
 #-----------------------------
@@ -62,10 +60,9 @@ done
 
 # pack the new build
 echo "Packing new kernel ..."
-now=`date +%Y%m%d%H%M`
 rm build/*.zip
 cd build || exit
-zip -r Skynet64_$now-bravia-cam-log-uv.zip . > /dev/null
+zip -r Skynet64_$version-bravia-cam-log-uv-fsync-dens.zip . > /dev/null
 cd ..
 echo "Done."
 

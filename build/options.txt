@@ -8,6 +8,8 @@ ramhacks:
 80          1080p video recording/playback and some very heavy 3D games doesn't work (Chainfire3D texture resolution adjust help)
 96          1080/720p video recording/playback, and many 3D games doesn't work (Chainfire3D texture resolution adjust help)
 
+Note: Every Ramhack between 0 and 96 will work.
+
 
 flags:
 -anim       Disable installation of bangmod bootanimation
@@ -15,6 +17,7 @@ flags:
 -bravia     Enable installation of sony bravia engine
 -cam        Enable installation of modded stock cam by kostja
 -cron       Disable installation of cron job for automatic cache dropping
+-dens       Enable low density tweaking (210) for higher screen resolution.
 -font       Disable installation of roboto font
 -ffc        Force fast charging
 -fsync      Disable fsync syscalls

@@ -94,6 +94,7 @@ curflag=basic; parse_flag; basic=$fvalue        # disable even the most basic tw
 curflag=bravia; parse_flag; bravia=$fvalue      # enable installation of sony bravia engine
 curflag=cam; parse_flag; cam=$fvalue            # enable installation of modded stock cam by kostja
 curflag=cron; parse_flag; cron=$fvalue          # disable installation of cron job for automatic cache dropping
+curflag=dens; parse_flag; dens=$fvalue          # enable low density tweaking (210) for higher screen resolution.
 curflag=font; parse_flag; font=$fvalue          # disable installation of roboto font
 curflag=ffc; parse_flag; ffc=$fvalue            # Force fast charging
 curflag=fsync; parse_flag; fsync=$fvalue        # disable fsync syscalls
@@ -310,26 +311,6 @@ if [ "$cam" == "1" ]; then
     cp $basedir/files/libcamera.so /system/lib/libcamera.so
 fi
 
-if [ "$bravia" == "1" ]; then
-    ui_print "Installing Sony bravia engine ..."
-
-    cp /system/build.prop /sdcard/build.prop.bak
-    awk '/^ro.service.swiqi.supported/ {print "ro.service.swiqi.supported=true"; found=1} !/^ro.service.swiqi.supported/ {print $0} END {if (!found) {print "ro.service.swiqi.supported=true" }}' /sdcard/build.prop.bak > $basedir/build.prop.tmp1
-    awk '/^persist.service.swiqi.enable/ {print "persist.service.swiqi.enable=1"; found=1} !/^persist.service.swiqi.enable/ {print $0} END {if (!found) {print "persist.service.swiqi.enable=1" }}' $basedir/build.prop.tmp1 > $basedir/build.prop.bravia
-    if [ -s $basedir/build.prop.bravia ]; then
-        cp $basedir/build.prop.bravia /system/build.prop
-        cp -r $basedir/files/bravia/* /system
-        chmod 777 /system/etc/be_movie
-        chmod 777 /system/etc/be_photo
-        chmod 777 /system/etc/permissions/com.sonyericsson.android.SwIqiBmp.xml
-        chmod 777 /system/framework/com.sonyericsson.android.SwIqiBmp.jar
-        chmod 777 /system/lib/libswiqibmpcnv.so
-    else
-        ui_print "WARNING: Installing Sony bravia engine failed!"
-        warning=$((warning + 1))
-    fi
-fi
-
 if [ "$gapps" != "1" ]; then
     ui_print "Installing Google apps ..."
     rm -f /system/app/CarHomeLauncher.apk
@@ -384,15 +365,53 @@ if [ "$uv" == "1" ]; then
     chmod 775 /system/etc/init.d/93uv
 fi
 
+#############################################################
+#                   build.prop tweaks                       #
+#############################################################
+if [ "$dens" == "1" ] || 
+   [ "$bravia" == "1" ] || 
+   [ "$prop" != "1" ]; then
+
+    propfile=/sdcard/build.prop.bak
+    cp /system/build.prop $propfile
+
+fi
+
+if [ "$dens" == "1" ]; then
+    ui_print "Applying low density tweak ..."
+    awk '/^ro.sf.lcd_density/ {print "ro.sf.lcd_density=210"; found=1} !/^ro.sf.lcd_density/ {print $0} END {if (!found) {print "ro.sf.lcd_density=210" }}' $propfile > $basedir/build.prop.dens
+    if [ -s $basedir/build.prop.dens ]; then
+        cp $basedir/build.prop.dens /system/build.prop
+        propfile=$basedir/build.prop.dens
+    else
+        ui_print "WARNING: Applying of low density tweak failed!"
+        warning=$((warning + 1))
+    fi
+fi
+
+if [ "$bravia" == "1" ]; then
+    ui_print "Installing Sony bravia engine ..."
+    awk '/^ro.service.swiqi.supported/ {print "ro.service.swiqi.supported=true"; found=1} !/^ro.service.swiqi.supported/ {print $0} END {if (!found) {print "ro.service.swiqi.supported=true" }}' $propfile > $basedir/build.prop.tmp1
+    awk '/^persist.service.swiqi.enable/ {print "persist.service.swiqi.enable=1"; found=1} !/^persist.service.swiqi.enable/ {print $0} END {if (!found) {print "persist.service.swiqi.enable=1" }}' $basedir/build.prop.tmp1 > $basedir/build.prop.bravia
+    if [ -s $basedir/build.prop.bravia ]; then
+        cp $basedir/build.prop.bravia /system/build.prop
+        propfile=$basedir/build.prop.bravia
+
+        cp -r $basedir/files/bravia/* /system
+        chmod 777 /system/etc/be_movie
+        chmod 777 /system/etc/be_photo
+        chmod 777 /system/etc/permissions/com.sonyericsson.android.SwIqiBmp.xml
+        chmod 777 /system/framework/com.sonyericsson.android.SwIqiBmp.jar
+        chmod 777 /system/lib/libswiqibmpcnv.so
+    else
+        ui_print "WARNING: Installing Sony bravia engine failed!"
+        warning=$((warning + 1))
+    fi
+fi
+
 if [ "$prop" != "1" ]; then
     ui_print "Applying build.prop tweaks ..."
-    if [ "$bravia" != "1" ]; then
-        cp /system/build.prop /sdcard/build.prop.bak
-        cp /sdcard/build.prop.bak /sdcard/build.prop.mod
-    else
-        cp $basedir/build.prop.bravia $basedir/build.prop.mod
-    fi
-    awk '/^wifi.supplicant_scan_interval/ {print "wifi.supplicant_scan_interval=320"; found=1} !/^wifi.supplicant_scan_interval/ {print $0} END {if (!found) {print "wifi.supplicant_scan_interval=320" }}' $basedir/build.prop.mod > $basedir/build.prop.mod0
+    awk '/^wifi.supplicant_scan_interval/ {print "wifi.supplicant_scan_interval=320"; found=1} !/^wifi.supplicant_scan_interval/ {print $0} END {if (!found) {print "wifi.supplicant_scan_interval=320" }}' $propfile > $basedir/build.prop.mod0
     awk '/^windowsmgr.max_events_per_sec/ {print "windowsmgr.max_events_per_sec=60"; found=1} !/^windowsmgr.max_events_per_sec/ {print $0} END {if (!found) {print "windowsmgr.max_events_per_sec=60" }}' $basedir/build.prop.mod0 > $basedir/build.prop.mod1
     awk '/^ro.telephony.call_ring.delay/ {print "ro.telephony.call_ring.delay=400"; found=1} !/^ro.telephony.call_ring.delay/ {print $0} END {if (!found) {print "ro.telephony.call_ring.delay=400" }}' $basedir/build.prop.mod1 > $basedir/build.prop.mod2
     awk '/^dalvik.vm.heapsize/ {print "dalvik.vm.heapsize=32m"; found=1} !/^dalvik.vm.heapsize/ {print $0} END {if (!found) {print "dalvik.vm.heapsize=32m" }}' $basedir/build.prop.mod2 > $basedir/build.prop.mod3
