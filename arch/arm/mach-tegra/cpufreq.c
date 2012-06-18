@@ -49,6 +49,7 @@
 
 #include <nvrm_power.h>
 #include <nvrm_power_private.h>
+#include <linux/earlysuspend.h>
 
 #include <linux/skynet.h>
 
@@ -59,6 +60,7 @@ static struct task_struct *cpufreq_dfsd = NULL;
 static struct clk *clk_cpu = NULL;
 
 static DEFINE_MUTEX(init_mutex);
+static DEFINE_MUTEX(early_mutex);
 
 #ifdef CONFIG_HOTPLUG_CPU
 static int disable_hotplug = 0;
@@ -216,6 +218,32 @@ int tegra_start_dvfsd(void) {
 	return rc;
 }
 
+static void tegra_cpu_early_suspend(struct early_suspend *h)
+{
+	mutex_lock(&early_mutex);
+	/* turn off 2nd cpu ALWAYS */
+	if (num_online_cpus() > 1)
+		cpu_down(1);
+
+	mutex_unlock(&early_mutex);
+}
+
+static void tegra_cpu_late_resume(struct early_suspend *h)
+{
+	mutex_lock(&early_mutex);
+	/* restore dual core operations */
+	if (num_online_cpus() < 2)
+		cpu_up(1);
+
+	mutex_unlock(&early_mutex);
+}
+
+static struct early_suspend tegra_cpu_early_suspend_handler = {
+	.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN,
+	.suspend = tegra_cpu_early_suspend,
+	.resume = tegra_cpu_late_resume,
+};
+
 static int tegra_cpufreq_init_once(void)
 {
 	struct sched_param sp;
@@ -319,6 +347,9 @@ static int __init tegra_cpufreq_init(void)
 #ifdef CONFIG_HOTPLUG_CPU
 	pm_notifier(tegra_cpufreq_pm_notifier, 0);
 #endif
+
+	register_early_suspend(&tegra_cpu_early_suspend_handler);
+
 	return cpufreq_register_driver(&s_tegra_cpufreq_driver);
 }
 
