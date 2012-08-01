@@ -62,7 +62,7 @@ done
 echo "Packing new kernel ..."
 rm build/*.zip
 cd build || exit
-zip -r Skynet64_$version-bravia-cam-log-uv-fsync-dens.zip . > /dev/null
+zip -r Skynet64_$version-bravia-cam-uv-fsync.zip . > /dev/null
 cd ..
 echo "Done."
 
