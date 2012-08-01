@@ -45,7 +45,7 @@
 #define inactive_file_ratio_default 20
 #define vfs_cache_pressure 100000
 #define default_swappiness 99
-#define VM_MAX_READAHEAD 128
+#define VM_MAX_READAHEAD 32
 #define VM_MIN_READAHEAD 16
 
 // Scheduler
