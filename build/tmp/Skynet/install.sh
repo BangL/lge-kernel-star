@@ -348,9 +348,8 @@ if [ "$keep" != "1" ]; then
     rm -f /system/app/CMUpdateNotify.apk
 
     ui_print "Deleting CM Live Wallpapers ..."
-    rm -f /system/app/LiveWallapapers.apk
-    rm -f /system/app/LiveWallapapersPicker.apk
-    rm -f /system/app/LiveWallapapersPicker.apk
+    rm -f /system/app/LiveWallpapers.apk
+    rm -f /system/app/LiveWallpapersPicker.apk
     rm -f /system/app/MagicSmokeWallpapers.apk
     rm -f /system/app/VisualizationWallpapers.apk
 
