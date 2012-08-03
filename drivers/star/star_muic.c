@@ -519,9 +519,9 @@ int cp_emergency_download(void)
     //reset Communication Processor (GPIO_PV0: high -> 1000ms -> low -> 3000ms -> high)
     NvOdmGpioSetState(hCpEmergencgy, hMDMRest, 0x1);
     NvOdmGpioConfig(hCpEmergencgy, hMDMRest, NvOdmGpioPinMode_Output);
-    msleep_interruptible(1000);
+    msleep(1000);
     NvOdmGpioSetState(hCpEmergencgy, hMDMRest, 0x0);
-    msleep_interruptible(3000);
+    msleep(3000);
     NvOdmGpioSetState(hCpEmergencgy, hMDMRest, 0x1);
 
     //change USB path from AP to CP
