@@ -915,7 +915,7 @@ Ap20UsbPhyUlpiPowerControl(
         {
             // Bring the Phy out of suspend mode
             USB_IF_REG_UPDATE_DEF(SUSP_CTRL, USB_SUSP_CLR, SET);
-            NvOsSleepUS(100);
+            NvOsWaitUS(100);
             USB_IF_REG_UPDATE_DEF(SUSP_CTRL, USB_SUSP_CLR, UNSET);
         }
         else

@@ -50,7 +50,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 	}
 	if (value) {
 		NvOdmVibStart(s_hOdmVibrate);
-		msleep_interruptible(value);
+		msleep(value);
 		NvOdmVibStop(s_hOdmVibrate);
 	} else {
 		NvOdmVibStop(s_hOdmVibrate);

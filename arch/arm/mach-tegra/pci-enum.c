@@ -222,7 +222,7 @@ next_device:
 		 * the devcies behind the bridge.
 		 * */
 		/* FIXME: What should be the delay? */
-			msleep_interruptible(100);
+			msleep(100);
 			break;
 		}
 	}
