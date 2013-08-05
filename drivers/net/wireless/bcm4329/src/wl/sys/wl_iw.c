@@ -111,7 +111,7 @@ typedef const struct si_pub  si_t;
 #include <linux/rtnetlink.h>
 
 #define WL_IW_USE_ISCAN  1
-#define ENABLE_ACTIVE_PASSIVE_SCAN_SUPPRESS 1
+#define ENABLE_ACTIVE_PASSIVE_SCAN_SUPPRESS  0
 
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)) && 1
@@ -870,10 +870,9 @@ wl_iw_set_power_mode(
 {
 	int error = 0;
 	char *p = extra;
+	static int  pm = PM_FAST;
+	int  pm_local = PM_OFF;
 	char powermode_val = 0;
-
-	static int pm = PM_FAST;
-	int pm_local = PM_OFF;
 
 	WL_TRACE_COEX(("%s: DHCP session cmd:%s\n", __FUNCTION__, extra));
 
@@ -884,8 +883,7 @@ wl_iw_set_power_mode(
 		dev_wlc_ioctl(dev, WLC_GET_PM, &pm, sizeof(pm));
 		dev_wlc_ioctl(dev, WLC_SET_PM, &pm_local, sizeof(pm_local));
 
-		printk("%s: Jumping from pm state: %d to pm state: %d\n", dev->name, pm, pm_local);
-
+		
 		net_os_set_packet_filter(dev, 0);
 
 		g_bt->ts_dhcp_start = JF2MS;
@@ -1053,8 +1051,8 @@ wl_iw_set_btcoex_dhcp(
 
 #ifndef CUSTOMER_HW2
 	static int  pm = PM_FAST;
-	int pm_local = PM_OFF;
-#endif // CUSTOMER_HW2
+	int  pm_local = PM_OFF;
+#endif
 
 	char powermode_val = 0;
 	char buf_reg66va_dhcp_on[8] = { 66, 00, 00, 00, 0x10, 0x27, 0x00, 0x00 };
@@ -1740,6 +1738,7 @@ wl_control_wl_start(struct net_device *dev)
 #if defined(CONFIG_LGE_BCM432X_PATCH) && defined(CONFIG_BRCM_USE_DEEPSLEEP)
 		/* Use Deep Sleep instead of WL RESET */
 		dhd_deep_sleep(dev, FALSE);
+		wl_iw_send_priv_event(dev, "START");
 #else /* CONFIG_LGE_BCM432X_PATCH && CONFIG_BRCM_USE_DEEPSLEEP */
 #if defined(CONFIG_BRCM_USE_GPIO_RESET) /* Do not use GPIO Reset at On/Off. Use mpc. */
 		dhd_customer_gpio_wlan_ctrl(WLAN_RESET_ON);
@@ -2008,8 +2007,8 @@ wl_iw_control_wl_off_softap(
 		bcm_mdelay(200); //20120313 sangjun.bae@lge.com SoftAp delay for not turning on soft ap
 
 #if defined(WL_IW_USE_ISCAN)
-		
-#if  !defined(CSCAN)
+
+#ifndef CSCAN
 		wl_iw_free_ss_cache();
 		wl_iw_run_ss_cache_timer(0);
 		memset(g_scan, 0, G_SCAN_RESULTS);
@@ -5429,8 +5428,6 @@ wl_iw_get_encode(
 	return 0;
 }
 
-extern bool max_pm;
-
 static int
 wl_iw_set_power(
 	struct net_device *dev,
@@ -5441,13 +5438,9 @@ wl_iw_set_power(
 {
 	int error, pm;
 
-	if (max_pm) {
-		pm = vwrq->disabled ? PM_OFF : PM_MAX;
-	} else {
-		pm = vwrq->disabled ? PM_OFF : PM_FAST;
-	}
+	WL_TRACE(("%s: SIOCSIWPOWER\n", dev->name));
 
-	printk("%s: SIOCSIWPOWER, State: %d\n", dev->name, pm);
+	pm = vwrq->disabled ? PM_OFF : PM_MAX;
 
 	pm = htod32(pm);
 	if ((error = dev_wlc_ioctl(dev, WLC_SET_PM, &pm, sizeof(pm))))
@@ -7869,7 +7862,6 @@ wl_iw_set_powermode(
 	}
 	error = dev_wlc_ioctl(dev, WLC_SET_PM, &mode, sizeof(mode));
 	p += snprintf(p, MAX_WX_STRING, error < 0 ? "FAIL\n" : "OK\n");
-	printk("%s: setting power mode to: %d\n", __FUNCTION__);
 	wrqu->data.length = p - extra + 1;
 	return error;
 }
@@ -8171,7 +8163,7 @@ static int wl_iw_set_priv(
 	    else if (strnicmp(extra, "POWERMODE", strlen("POWERMODE")) == 0)
 			ret = wl_iw_set_btcoex_dhcp(dev, info, (union iwreq_data *)dwrq, extra);
 #else
-		else if (strnicmp(extra, "POWERMODE", 9) == 0)
+		else if (strnicmp(extra, "BTCOEXMODE", 9) == 0)
 			ret = wl_iw_set_powermode(dev, info,
 					(union iwreq_data *)dwrq, extra);
 		else if (strnicmp(extra, "SCAN-CHANNELS", 13) == 0)
@@ -8255,7 +8247,7 @@ static int wl_iw_set_priv(
 			WL_TRACE(("Unknown PRIVATE command %s\n", extra));
 			snprintf(extra, MAX_WX_STRING, "OK");
 			dwrq->length = strlen("OK") + 1;
-			WL_ERROR(("Unknown PRIVATE command, ignored\n"));
+			WL_TRACE(("Unknown PRIVATE command, ignored\n"));
 		}
 		WAKE_UNLOCK(iw->pub, WAKE_LOCK_PRIV);
 		WAKE_LOCK_DESTROY(iw->pub, WAKE_LOCK_PRIV);
