@@ -60,7 +60,7 @@
 #endif
 
 #ifdef	CONFIG_BATTERY_CHARGER
-#include <linux/su660_battery.h> 
+#include <linux/kowalski_battery.h>
 #endif
 
 #ifdef  CONFIG_BSSQ_BATTERY
@@ -86,6 +86,7 @@
 #include <lge/bssq_charger_rt.h>
 #endif
 #include <linux/lge_hw_rev.h>
+
 extern int muic_boot_keeping;
 extern int muic_boot_path;
 
@@ -582,34 +583,12 @@ static ssize_t muic_proc_write(struct file *filp, const char *buf, size_t len, l
 #endif				
 			case 'n':
 				printk("TA <==> DEVICE charger connection [%d] [%d]\n",g_half_charging_control,charging_mode);
-					switch (g_half_charging_control) {
-							case CHARGING_USB:
-								charger_ic_set_mode_for_muic(CHARGER_USB500); 
-								break;
-
-							case CHARGING_NA_TA:
-							case CHARGING_LG_TA:
-							case CHARGING_TA_1A:
-								charger_ic_set_mode_for_muic(CHARGER_ISET);
-								break;
-
-							case CHARGING_FACTORY:
-								//	charger_ic_set_mode(CHARGER_FACTORY);
-								break;
-
-							case CHARGING_NONE:
-								charger_ic_disable_for_muic();
-								break;
-
-							default:
-								charger_ic_disable_for_muic();
-								break;
-						}				
+				muic_send_charger_type(g_half_charging_control);
 				break;		
 			case 'd':
 				printk("TA =\\=  DEVICE charger disconnection %d\n",charging_mode);
 				g_half_charging_control=charging_mode;
-				charger_ic_disable_for_muic();
+				muic_send_charger_type(charging_mode);
 				break;	
 
 			case 'k':
@@ -654,16 +633,16 @@ static void remove_lg_muic_proc_file(void)
 void check_charging_mode(void)
 {
 	s32 value;
-
 	value = i2c_smbus_read_byte_data(muic_client, INT_STAT);
+
 	if (value & V_VBUS) {
-		if ((value & IDNO) == IDNO_0010 || 
-				(value & IDNO) == IDNO_0100 ||
-				(value & IDNO) == IDNO_1001 ||
-			(value & IDNO) == IDNO_1010 /*||
+		if ((value & IDNO) == IDNO_0010 ||
+		    (value & IDNO) == IDNO_0100 ||
+		    (value & IDNO) == IDNO_1001 ||
+		    (value & IDNO) == IDNO_1010 /*||
 			(boot_retain_mode == RETAIN_AP_USB && retain_mode == RETAIN_AP_USB)*/)	//[gieseo.park@lge.com] force set CHARGING_FACTORY on Boot RETAIN_AP_USB mode. (for MilkyU device)
 			charging_mode = CHARGING_FACTORY;
-		else if (value & CHGDET) 
+		else if (value & CHGDET)
 			charging_mode = CHARGING_LG_TA;
 		else
 			charging_mode = CHARGING_USB;
@@ -764,86 +743,19 @@ EXPORT_SYMBOL(get_muic_charger_type);
 
 void muic_send_charger_type(TYPE_CHARGING_MODE mode)
 {
-#ifdef CONFIG_BATTERY_CHARGER
-	switch (mode) {
-		case CHARGING_USB:
-			charger_ic_set_mode_for_muic(CHARGER_USB500); 
-			break;
-
-		case CHARGING_NA_TA:
-		case CHARGING_LG_TA:
-		case CHARGING_TA_1A:
-			charger_ic_set_mode_for_muic(CHARGER_ISET);
-			break;
-
-		case CHARGING_FACTORY:
-			//	charger_ic_set_mode(CHARGER_FACTORY);
-			break;
-
-		case CHARGING_NONE:
-			charger_ic_disable_for_muic();
-			break;
-
-		default:
-			charger_ic_disable_for_muic();
-			break;
-	}
-#elif CONFIG_MACH_BSSQ
-	switch (mode) {
-		case CHARGING_USB:	
-			charger_ic_set_mode(CHARGER_USB500); 
-			break;
-
-		case CHARGING_NA_TA:
-		case CHARGING_LG_TA:
-		case CHARGING_TA_1A:
-			charger_ic_set_mode(CHARGER_ISET);
-			break;
-
-		case CHARGING_FACTORY:
-			//charger_ic_set_mode(CHARGER_IC_GSM_TEST);
-			break;
-
-		case CHARGING_NONE:
-			charger_ic_disable();
-			break;
-
-		default:
-			charger_ic_disable();
-			break;
-	}
-
-#endif  
 	// Notify To Battery 
-	notification_of_changes_to_battery();
+	notification_of_changes_to_battery(mode);
 }
-
-
 
 // LGE_CHANGE_E[jongho3.lee] get muic detecting for charger.
 void set_muic_charger_detected(void)
 {
-#if 0 // this is for wait event which is not unsing just now. block it temporary..
-	//extern wait_queue_head_t muic_event;
-
-	DBG("[MUIC] LGE: set_muic_charger_detected\n");
-
-	//atomic_set(&muic_charger_detected,1);
-	//wake_up_interruptible(&muic_event);
-	muic_chager_event = 1;
-	//wake_up(&muic_event);
-#endif
-	//charger_fsm(CHARG_FSM_CAUSE_ANY);	//[gieseo.park@lge.com] - Cosmo code
-
-	muic_send_charger_type(charging_mode);	//[gieseo.park@lge.com] - X3 code
+	muic_send_charger_type(charging_mode);
 #if defined (MUIC_SLEEP)
 	muic_wakeup_lock();
 #endif//
 }
 EXPORT_SYMBOL(set_muic_charger_detected);
-
-
-
 
 /*
  * Function: Read the MUIC register whose internal address is addr
@@ -1092,18 +1004,20 @@ s32 muic_unknown_detect_accessory(s32 x)
 
 static void muic_detect_device(void)
 {
-	s32 ret;
-
 	DBG("[MUIC] muic_detect_device()\n");
 
-	ret = muic_i2c_read_byte(DEVICE_ID, &muic_device);
+#if defined (CONFIG_MACH_STAR_P990) && defined(CONFIG_CM_BOOTLOADER_COMPAT)
+	/* pengus77: force charger detection on old boot loader */
+	muic_device = MAX14526;
+#else
+	s32 ret = muic_i2c_read_byte(DEVICE_ID, &muic_device);
 	if ((muic_device & 0xf0) == TS5USBA33402)
 		muic_device = TS5USBA33402;
 	else if ((muic_device & 0xf0) == MAX14526)
 		muic_device = MAX14526;
 	else if ((muic_device & 0xf0) == ANY_VENDOR)
 		muic_device = ANY_VENDOR;
-
+#endif
 	if (muic_device == TS5USBA33402) {
 		muic_init_device = muic_init_ts5usba33402;
 		muic_detect_accessory = muic_ts5usba33402_detect_accessory;

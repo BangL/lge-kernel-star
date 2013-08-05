@@ -87,7 +87,11 @@ unsigned long tegra_fb_size;
 unsigned long tegra_fb2_start;
 unsigned long tegra_fb2_size;
 unsigned long tegra_carveout_start;
-unsigned long tegra_carveout_size;
+#ifdef CONFIG_CM_BOOTLOADER_COMPAT
+unsigned long tegra_carveout_size = SZ_128M;
+#else
+unsigned long tegra_carveout_size = 0x07800000; // 120MB
+#endif
 unsigned long tegra_vpr_start;
 unsigned long tegra_vpr_size;
 unsigned long tegra_lp0_vec_start;
@@ -363,12 +367,12 @@ void tegra_init_cache(bool init)
 #endif
 #endif
 }
-
+/*
 static struct platform_device tegra_pm_irq_resume_complete_device = {
 	.name = "pm_irq_pm_ops",
 	.id = -1,
 };
-
+*/
 static void __init tegra_init_power(void)
 {
 #ifdef CONFIG_ARCH_TEGRA_HAS_SATA
@@ -792,6 +796,10 @@ void __init tegra_reserve(unsigned long carveout_size, unsigned long fb_size,
 #endif
 
 	if (carveout_size) {
+		/* eating the carveout a bit */
+		if (tegra_carveout_size > 0)
+			carveout_size = tegra_carveout_size;
+
 		tegra_carveout_start = memblock_end_of_DRAM() - carveout_size;
 		if (memblock_remove(tegra_carveout_start, carveout_size)) {
 			pr_err("Failed to remove carveout %08lx@%08lx "
@@ -973,11 +981,14 @@ void __init tegra_ram_console_debug_init(void)
 	if (err) {
 		pr_err("%s: ram console registration failed (%d)!\n", __func__, err);
 	}
+	/*
 	err = platform_device_register(
 		&tegra_pm_irq_resume_complete_device);
 	if (err)
 		pr_err("%s: pm_irq_resume_complete registration "
 		"failed (%d)!\n", __func__, err);
+
+	*/
 }
 
 void __init tegra_release_bootloader_fb(void)

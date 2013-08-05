@@ -93,6 +93,36 @@ enum {
 #define AAT2870_OP_MODE_ALC     (1 << 1)
 #define AAT2870_MAX_LIGHT_INTENSITY 0x16
 
+static struct aat2870_ctl_tbl_t aat2870bl_pengus_tbl[] = {
+	{ 0x12, 0x09 },  /* 0 lux */
+	{ 0x13, 0x0A },  /* 50 lux*/
+	{ 0x14, 0x0C },  /* 100 lux */
+	{ 0x15, 0x0D },  /* 130 lux */
+	{ 0x16, 0x0E },  /* 160 lux */
+	{ 0x17, 0x10 },  /* 200 lux */
+	{ 0x18, 0x12 },  /* 250 lux */
+	{ 0x19, 0x13 },  /* 300 lux */
+	{ 0x1A, 0x15 },  /* 400 lux */
+	{ 0x1B, 0x17 },  /* 500 lux */
+	{ 0x1C, 0x19 },  /* 650 lux */
+	{ 0x1D, 0x1C },  /* 800 lux */
+	{ 0x1E, 0x20 },  /* 1000 lux */
+	{ 0x1F, 0x27 },  /* 1400 lux */
+	{ 0x20, 0x2B },  /* 2000 lux */
+	{ 0x21, 0x3C },  /* 3000 lux */
+	{ 0x0E, 0x31 },  // SNSR_LIN_LOG=linear, ALSOUT_LIN_LOG=linear, RSET=16k~64k,
+						 // GAIN=low, GM=auto, ALS_EN=on
+	//{ 0x0E, 0xF1 },  // SNSR_LIN_LOG=log, ALSOUT_LIN_LOG=log, RSET=16k~64k,
+					 // GAIN=low, GM=auto, ALS_EN=on
+    //{ 0x0E, 0x73 },// SNSR_LIN_LOG=linear, ALSOUT_LIN_LOG=log, RSET=16k~64k,
+     	 	 	 	 // GAIN=low, GM=man gain, ALS_EN=on
+    { 0x0F, 0x01 },  // SBIAS=3.0V, SBIAS=on
+    { 0x10, 0xB0 },  // pwm inactive, auto polling, 2sec, +0%
+    //{ 0x10, 0x90 },// pwm inactive, auto polling, 1sec, +0%
+    { 0x00, 0xFF },  // Channel Enable : ALL
+    { 0xFF, 0xFE }   // end or command
+};
+
 static struct aat2870_ctl_tbl_t aat2870bl_fade_in_tbl[] = {
 	{ 0x0c, 0x02 }, //Fade, Disabled
 	{ 0x01, 0x00 }, 
@@ -451,10 +481,6 @@ static void aat2870_bl_enable(struct backlight_device *bd)
 	int i;
 
 	dbg("enable\n");
-	if(is_suspended == true)
-	{
-		return 0;
-	}
 
 	if (drvdata->en_pin >= 0) {
 // LGE_CHANGE_S [youngseok.jeong@lge.com] 2011-01-17 [LGE_AP20] back-light
@@ -624,14 +650,12 @@ static int aat2870_bl_get_brightness(struct backlight_device *bd)
 
 // MOBII_S [shhong@mobii.co.kr] 2012-05-07 : Auto Brightness Setting From P990.
 #if defined(CONFIG_MACH_STAR_P990) || defined(CONFIG_MACH_STAR_SU660)
-static int aat2870_bl_update_modestatus(struct backlight_device *bd)
+static void aat2870_bl_update_modestatus(struct backlight_device *bd)
 {
 //MOBII_CHNANGE_S 20120819 ih.han@mobii.co.kr : Modify ALS table value
-    struct aat2870_bl_driver_data *drvdata = dev_get_drvdata(&bd->dev);
     int brightness_mode = bd->props.brightness_mode;
+    struct aat2870_bl_driver_data *drv = aat2870_bl_drvdata;
     int next_mode;
-    static struct aat2870_bl_driver_data *drv;
-    drv = aat2870_bl_drvdata;
 
     if(brightness_mode == 1)
     {
@@ -657,10 +681,8 @@ static int aat2870_bl_update_status(struct backlight_device *bd)
 	int brightness = bd->props.brightness;
 	int ret = 0;
 
-	if(is_suspended == true)
-	{
+	if(is_suspended)
 		return 0;
-	}
 
 	if ((brightness < 0) || (brightness > bd->props.max_brightness)) {
 		dev_err(&bd->dev,
@@ -753,34 +775,29 @@ static unsigned int aat2870_bl_conv_to_lux(int lev)
 
 static int aat2870_bl_send_cmd(struct aat2870_bl_driver_data *drv, struct aat2870_ctl_tbl_t *tbl)
 {
-        unsigned long delay = 0;
+	unsigned long delay = 0;
 
-	if(is_suspended == true)
-	{
+	if (is_suspended)
 		return 0;
-	}
-        if (tbl == NULL) {
-                dbg("input ptr is null\n");
-                return -EIO;
-        }
 
-        mutex_lock(&drv->cmd_lock);
-        for( ;;) {
-                if (tbl->reg == 0xFF) {
-                        if (tbl->val != 0xFE) {
-                                delay = (unsigned long)tbl->val;
-                        }
-                        else
-                                break;
-                }
-                else {
-                        if (aat2870_bl_write(drv->bd, tbl->reg, tbl->val) != 0)
-                                dbg("i2c failed addr:%d, value:%d\n", tbl->reg, tbl->val);
-                }
-                tbl++;
-        }
-        mutex_unlock(&drv->cmd_lock);
-        return 0;
+	if (tbl == NULL) {
+		dbg("input ptr is null\n");
+		return -EIO;
+	}
+
+	mutex_lock(&drv->cmd_lock);
+	for( ;;) {
+		if (tbl->reg == 0xFF && tbl->val == 0xFE) {
+			break;
+		}
+		else {
+			if (aat2870_bl_write(drv->bd, tbl->reg, tbl->val) != 0)
+				dbg("i2c failed addr:%d, value:%d\n", tbl->reg, tbl->val);
+		}
+		tbl++;
+	}
+	mutex_unlock(&drv->cmd_lock);
+	return 0;
 }
 
 static void aat2870_bl_switch_mode(int op_mode)
@@ -860,10 +877,6 @@ static ssize_t aat2870_bl_store_intensity(struct device *dev, struct device_attr
 	drv = aat2870_bl_drvdata;
 	if (!count)
 		return -EINVAL;
-	if(is_suspended == true)
-	{
-		return 0;
-	}
 
 	sscanf(buf, "%d", &intensity);	//level range: 0 to 22 from aat2870 ds
 
@@ -1138,12 +1151,80 @@ static ssize_t aat2870_bl_show_panel_info(struct device *dev, struct device_attr
 #undef	TEGRA_GPIO_PJ5
 #endif
 }
-static ssize_t aat2870_bl_store_panel_info(struct device *dev, struct device_attribute *attr, char *buf, size_t count)
+static ssize_t aat2870_bl_store_panel_info(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	return 0;
 }
-#endif
 // MOBII_E [shhong@mobii.co.kr] 2012-05-10 : Rollbacked Sysfs Recovery
+
+static ssize_t aat2870_bl_show_alc_table(struct device *dev, struct device_attribute *attr, char *buf) {
+	static struct aat2870_bl_driver_data *drv;
+	struct aat2870_ctl_tbl_t *tbl;
+	char *table;
+	int i;
+
+	table = buf;
+
+	drv = aat2870_bl_drvdata;
+	if (!drv)
+		return -EINVAL;
+
+	tbl = drv->cmds.alc;
+	if (!tbl)
+		return -EINVAL;
+
+	for (i=0; i<16; i++) {
+		table += sprintf(table, "%d = %d\n", aat2870_lux_tbl[i].lux, tbl[i].val);
+	}
+
+	table += sprintf(table, "\n");
+	return table - buf;
+}
+
+static ssize_t aat2870_bl_store_alc_table(struct device *dev, struct device_attribute *attr, const char *buf, size_t count) {
+	static struct aat2870_bl_driver_data *drv;
+	struct aat2870_ctl_tbl_t *tbl;
+	int i;
+	unsigned long val;
+	char *k, *p;
+
+	p = buf;
+
+	drv = aat2870_bl_drvdata;
+	if (!drv)
+		return -EINVAL;
+
+	tbl = drv->cmds.alc;
+	if (!tbl)
+		return -EINVAL;
+
+	i = 0;
+	while (i<16) {
+		k = strsep(&p, " ");
+		if (k == NULL)
+			break;
+		if (strlen(k) > 0) {
+			val = simple_strtoul(k, NULL, 10);
+
+			if (val < 3)
+				val = 3;
+			if (val > 70)
+				val = 70;
+
+			tbl[i].val = val;
+			i++;
+		}
+	}
+
+	drv->cmds.alc = tbl;
+	if (drv->op_mode == AAT2870_OP_MODE_ALC) {
+		printk("%s: sent new table to the backlight driver !\n", __FUNCTION__);
+		aat2870_bl_send_cmd(drv, tbl);
+	}
+
+	return count;
+}
+#endif
 
 /* Sysfs Block */
 static DEVICE_ATTR(intensity, 0666, aat2870_bl_show_intensity, aat2870_bl_store_intensity);
@@ -1156,6 +1237,7 @@ static DEVICE_ATTR(lsensor_onoff, 0666, aat2870_bl_show_lsensor_onoff, aat2870_b
 #if defined(CONFIG_MACH_STAR_P990) || defined(CONFIG_MACH_STAR_SU660)
 static DEVICE_ATTR(panel_info,0666, aat2870_bl_show_panel_info, aat2870_bl_store_panel_info);
 static DEVICE_ATTR(foff,      0666, aat2870_bl_show_onoff, aat2870_bl_store_foff);
+static DEVICE_ATTR(alc_table, 0664, aat2870_bl_show_alc_table, aat2870_bl_store_alc_table);
 #endif
 // MOBII_E [shhong@mobii.co.kr] 2012-05-10 : Rollbacked Sysfs Recovery
 
@@ -1171,6 +1253,7 @@ static struct attribute *aat2870_bl_attributes[] = {
 #if defined(CONFIG_MACH_STAR_P990) || defined(CONFIG_MACH_STAR_SU660)
 	&dev_attr_panel_info.attr,
 	&dev_attr_foff.attr,
+	&dev_attr_alc_table.attr,
 #endif
 // MOBII_E [shhong@mobii.co.kr] 2012-05-10 : Rollbacked Sysfs Recovery
         NULL,
@@ -1268,7 +1351,7 @@ static int aat2870_bl_probe(struct i2c_client *client,
 	/* Driver Data Information */
 	drvdata->cmds.normal = aat2870bl_normal_tbl;
 #if defined(FEATURE_ALC_TABLE_SELECTION)//                               
-        drvdata->cmds.alc = aat2870bl_alc_tbl[marked_id];
+        drvdata->cmds.alc = aat2870bl_pengus_tbl; // aat2870bl_alc_tbl[marked_id];
 #else
         drvdata->cmds.alc = aat2870bl_alc_tbl;
 #endif /* FEATURE_ALC_TABLE_SELECTION */        

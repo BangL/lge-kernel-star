@@ -159,6 +159,16 @@
 #define AP25_EMC_INTERMEDIATE_RATE	760000000
 #define AP25_EMC_SCALING_STEP		600000000
 
+#ifdef CONFIG_KOWALSKI_OC
+#ifdef CONFIG_KOWALSKI_MAX_OC
+#define TEGRA_MAX_CLOCK			1500000000
+#else
+#define TEGRA_MAX_CLOCK			1200000000
+#endif //CONFIG_KOWALSKI_MAX_OC
+#else
+#define TEGRA_MAX_CLOCK			1000000000
+#endif
+
 static void __iomem *reg_clk_base = IO_ADDRESS(TEGRA_CLK_RESET_BASE);
 static void __iomem *reg_pmc_base = IO_ADDRESS(TEGRA_PMC_BASE);
 static void __iomem *misc_gp_hidrev_base = IO_ADDRESS(TEGRA_APB_MISC_BASE);
@@ -410,7 +420,7 @@ static struct clk tegra2_clk_twd = {
 		 atomic context which cannot take a mutex. */
 	.name     = "twd",
 	.ops      = &tegra2_twd_ops,
-	.max_rate = 1000000000,	/* Same as tegra_clk_virtual_cpu.max_rate */
+	.max_rate = 1000000000,
 	.mul      = 1,
 	.div      = 4,
 };
@@ -1096,7 +1106,6 @@ out:
 static void tegra2_periph_clk_disable(struct clk *c)
 {
 	unsigned long flags;
-	unsigned long val;
 
 	pr_debug("%s on clock %s\n", __func__, c->name);
 
@@ -1113,7 +1122,7 @@ static void tegra2_periph_clk_disable(struct clk *c)
 		 * flush the write operation in apb bus. This will avoid the
 		 * peripheral access after disabling clock*/
 		if (c->flags & PERIPH_ON_APB)
-			val = chipid_readl();
+			chipid_readl();
 
 		clk_writel(PERIPH_CLK_TO_ENB_BIT(c),
 			CLK_OUT_ENB_CLR + PERIPH_CLK_TO_ENB_SET_REG(c));
@@ -1125,7 +1134,6 @@ static void tegra2_periph_clk_disable(struct clk *c)
 static void tegra2_periph_clk_reset(struct clk *c, bool assert)
 {
 	unsigned long base = assert ? RST_DEVICES_SET : RST_DEVICES_CLR;
-	unsigned long val;
 
 	pr_debug("%s %s on clock %s\n", __func__,
 		 assert ? "assert" : "deassert", c->name);
@@ -1137,7 +1145,7 @@ static void tegra2_periph_clk_reset(struct clk *c, bool assert)
 		 * flush the write operation in apb bus. This will avoid the
 		 * peripheral access after disabling clock*/
 		if (c->flags & PERIPH_ON_APB)
-			val = chipid_readl();
+			chipid_readl();
 
 		clk_writel(PERIPH_CLK_TO_ENB_BIT(c),
 			   base + PERIPH_CLK_TO_ENB_SET_REG(c));
@@ -1949,11 +1957,41 @@ static struct clk tegra_pll_u = {
 };
 
 static struct clk_pll_freq_table tegra_pll_x_freq_table[] = {
+#if defined(CONFIG_KOWALSKI_OC) && defined(CONFIG_KOWALSKI_MAX_OC)
+	/* 1.500 GHz */
+	{ 12000000, 1500000000,  875,  7, 1, 12},
+	{ 13000000, 1500000000,  923,  8, 1, 12},
+	{ 19200000, 1500000000,  625,  8, 1,  8},
+	{ 26000000, 1500000000,  750, 13, 1, 12},
+
+	/* 1.404 GHz */
+	{ 12000000, 1404000000,  936,  8, 1, 12},
+	{ 13000000, 1404000000,  972,  9, 1, 12},
+	{ 19200000, 1404000000,  585,  8, 1,  8},
+	{ 26000000, 1404000000,  972, 18, 1, 12},
+
+	/* 1.300 GHz */
+	{ 12000000, 1300000000, 650,  6,  1, 12},
+	{ 13000000, 1300000000, 1000, 10, 1, 12},
+	{ 19200000, 1300000000, 812,  12,  1, 8},
+	{ 26000000, 1300000000, 650,  13, 1, 12},
+#endif
+
+#if defined(CONFIG_MACH_BSSQ) || defined(CONFIG_KOWALSKI_OC)
 	/* 1.2 GHz */
 	{ 12000000, 1200000000, 600,  6,  1, 12},
 	{ 13000000, 1200000000, 923,  10, 1, 12},
 	{ 19200000, 1200000000, 750,  12, 1, 8},
 	{ 26000000, 1200000000, 600,  13, 1, 12},
+#endif
+
+#ifdef CONFIG_KOWALSKI_OC
+	/* 1.1 GHz */
+	{ 12000000, 1100000000, 550, 6, 1, 12},
+	{ 13000000, 1100000000, 770, 10, 1, 12},
+	{ 19200000, 1100000000, 630, 12, 1, 8},
+	{ 26000000, 1100000000, 550, 13, 1, 12},
+#endif
 
 	/* 1 GHz */
 	{ 12000000, 1000000000, 1000, 12, 1, 12},
@@ -2012,14 +2050,14 @@ static struct clk tegra_pll_x = {
 	.ops       = &tegra_pll_ops,
 	.reg       = 0xe0,
 	.parent    = &tegra_clk_m,
-	.max_rate  = 1000000000,
+	.max_rate  = TEGRA_MAX_CLOCK,
 	.u.pll = {
 		.input_min = 2000000,
 		.input_max = 31000000,
 		.cf_min    = 1000000,
 		.cf_max    = 6000000,
 		.vco_min   = 20000000,
-		.vco_max   = 1200000000,
+		.vco_max   = TEGRA_MAX_CLOCK,
 		.freq_table = tegra_pll_x_freq_table,
 		.lock_delay = 300,
 	},
@@ -2158,7 +2196,7 @@ static struct clk tegra_clk_cclk = {
 	.inputs	= mux_cclk,
 	.reg	= 0x20,
 	.ops	= &tegra_super_ops,
-	.max_rate = 1000000000,
+	.max_rate  = TEGRA_MAX_CLOCK,
 };
 
 static struct clk tegra_clk_sclk = {
@@ -2195,7 +2233,7 @@ static struct clk tegra_clk_hclk = {
 	.reg		= 0x30,
 	.reg_shift	= 4,
 	.ops		= &tegra_bus_ops,
-	.max_rate       = 240000000,
+	.max_rate	= 240000000,
 	.min_rate	= 36000000,
 };
 
@@ -2206,7 +2244,7 @@ static struct clk tegra_clk_pclk = {
 	.reg		= 0x30,
 	.reg_shift	= 0,
 	.ops		= &tegra_bus_ops,
-	.max_rate       = 120000000,
+	.max_rate	= 120000000,
 	.min_rate	= 36000000,
 };
 
@@ -2590,9 +2628,10 @@ static struct tegra_sku_rate_limit sku_limits[] =
 	RATE_LIMIT("cclk",	750000000, 0x07, 0x10),
 	RATE_LIMIT("pll_x",	750000000, 0x07, 0x10),
 
-	RATE_LIMIT("cpu",	1000000000, 0x04, 0x08, 0x0F),
-	RATE_LIMIT("cclk",	1000000000, 0x04, 0x08, 0x0F),
-	RATE_LIMIT("pll_x",	1000000000, 0x04, 0x08, 0x0F),
+	/* sku == 0x0F for Tegra 2 */
+	RATE_LIMIT("cpu",	TEGRA_MAX_CLOCK, 0x04, 0x08, 0x0F),
+	RATE_LIMIT("cclk",	TEGRA_MAX_CLOCK, 0x04, 0x08, 0x0F),
+	RATE_LIMIT("pll_x",	TEGRA_MAX_CLOCK, 0x04, 0x08, 0x0F),
 
 	RATE_LIMIT("cpu",	1200000000, 0x14, 0x17, 0x18, 0x1B, 0x1C),
 	RATE_LIMIT("cclk",	1200000000, 0x14, 0x17, 0x18, 0x1B, 0x1C),
@@ -2603,7 +2642,7 @@ static struct tegra_sku_rate_limit sku_limits[] =
 	RATE_LIMIT("vde",	240000000, 0x04, 0x7, 0x08, 0x0F, 0x10),
 	RATE_LIMIT("3d",	300000000, 0x04, 0x7, 0x08, 0x0F, 0x10),
 
-	RATE_LIMIT("host1x",	108000000, 0x0F),
+	RATE_LIMIT("host1x",108000000, 0x0F),
 
 	RATE_LIMIT("sclk",	300000000, 0x14, 0x17, 0x18, 0x1B, 0x1C),
 	RATE_LIMIT("virt_sclk",	300000000, 0x14, 0x17, 0x18, 0x1B, 0x1C),
@@ -2690,14 +2729,37 @@ static struct cpufreq_frequency_table freq_table_1p2GHz[] = {
 	{ 5, 816000 },
 	{ 6, 912000 },
 	{ 7, 1000000 },
-	{ 8, 1200000 },
-	{ 9, CPUFREQ_TABLE_END },
+	{ 8, 1100000 },
+	{ 9, 1200000 },
+	{ 10, CPUFREQ_TABLE_END },
 };
 
+#ifdef CONFIG_KOWALSKI_MAX_OC
+static struct cpufreq_frequency_table freq_table_1p5GHz[] = {
+	{ 0, 216000 },
+	{ 1, 312000 },
+	{ 2, 456000 },
+	{ 3, 608000 },
+	{ 4, 760000 },
+	{ 5, 816000 },
+	{ 6, 912000 },
+	{ 7, 1000000 },
+	{ 8, 1100000 },
+	{ 9, 1200000 },
+	{10, 1300000 },
+	{11, 1404000 },
+	{12, 1500000 },
+	{13, CPUFREQ_TABLE_END },
+};
+#endif
+
 static struct tegra_cpufreq_table_data cpufreq_tables[] = {
-	{ freq_table_750MHz, 1, 4 },
+	{ freq_table_750MHz, 1, 4 }, // default fallback table
 	{ freq_table_1p0GHz, 2, 6 },
 	{ freq_table_1p2GHz, 2, 7 },
+#if defined(CONFIG_KOWALSKI_OC) && defined(CONFIG_KOWALSKI_MAX_OC)
+	{ freq_table_1p5GHz, 2, 6 },
+#endif // CONFIG_KOWALSKI_MAX_OC
 };
 
 struct tegra_cpufreq_table_data *tegra_cpufreq_table_get(void)
@@ -2721,20 +2783,14 @@ struct tegra_cpufreq_table_data *tegra_cpufreq_table_get(void)
 unsigned long tegra_emc_to_cpu_ratio(unsigned long cpu_rate)
 {
 	/* Vote on memory bus frequency based on cpu frequency */
-	if (cpu_rate > 1000000000)
-		return 760000000;
-	else if (cpu_rate >= 816000)
-		return 600000000;	/* cpu 816 MHz, emc max */
-	else if (cpu_rate >= 608000)
-		return 300000000;	/* cpu 608 MHz, emc 150Mhz */
-	else if (cpu_rate >= 456000)
-		return 150000000;	/* cpu 456 MHz, emc 75Mhz */
+	if (cpu_rate >= 760000)
+		return 600000000;	/* cpu 760 MHz, emc 600Mhz */
 	else if (cpu_rate >= 312000)
-		return 100000000;	/* cpu 312 MHz, emc 50Mhz */
+		return 300000000;	/* cpu 312 MHz, emc 300Mhz */
 	else
-		return 50000000;	/* emc 25Mhz */
+		return 50000000;	/* cpu 216 MHz, emc 25Mhz */
 }
-#endif
+#endif //CONFIG_CPU_FREQ
 
 #ifdef CONFIG_PM_SLEEP
 static u32 clk_rst_suspend[RST_DEVICES_NUM + CLK_OUT_ENB_NUM +

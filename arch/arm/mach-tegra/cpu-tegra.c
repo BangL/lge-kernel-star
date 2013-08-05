@@ -40,6 +40,10 @@
 #include <mach/clk.h>
 #include <mach/edp.h>
 
+#ifdef CONFIG_KOWALSKI_CPU_SUSPEND_FREQ_LIMIT
+#include <linux/earlysuspend.h>
+#endif
+
 #include "clock.h"
 #include "cpu-tegra.h"
 #include "dvfs.h"
@@ -57,6 +61,10 @@ static DEFINE_MUTEX(tegra_cpu_lock);
 static bool is_suspended;
 static int suspend_index;
 
+#ifdef CONFIG_KOWALSKI_OC
+#define CPU_BOOT_CLOCK 1000000
+#endif
+
 static bool force_policy_max;
 
 #ifdef CONFIG_TEGRA_CPU_FREQ_LOCK
@@ -65,7 +73,6 @@ static DEFINE_MUTEX(tegra_cpulock_lock);
 static bool is_cpufreq_locked;
 static unsigned long min_cpulock_freq;
 static unsigned long max_cpulock_freq;
-static int cpulock_debug_timeout;
 static struct hrtimer cpulock_timer;
 void tegra_cpu_lock_speed(unsigned long min_rate, unsigned long max_rate, int timeout_ms);
 void tegra_cpu_unlock_speed(void);
@@ -97,8 +104,11 @@ static struct kernel_param_ops policy_ops = {
 };
 module_param_cb(force_policy_max, &policy_ops, &force_policy_max, 0644);
 
-
+#ifdef CONFIG_KOWALSKI_OC
+static unsigned int cpu_user_cap = CPU_BOOT_CLOCK;
+#else
 static unsigned int cpu_user_cap;
+#endif
 
 static int cpu_user_cap_set(const char *arg, const struct kernel_param *kp)
 {
@@ -576,13 +586,13 @@ void tegra_cpu_lock_speed(unsigned long min_rate, unsigned long max_rate, int ti
 		}
 	}
 	if (!found) {
-		pr_err("cpu-tegra: Failed to lock cpu frequency to %d kHz\n", min_rate);
+		pr_err("cpu-tegra: Failed to lock cpu frequency to %lu kHz\n", min_rate);
 		return;
 	}
 
 	mutex_lock(&tegra_cpulock_lock);
 
-	printk(KERN_DEBUG "%s: min_rate(%d),timeout(%d)\n",
+	printk(KERN_DEBUG "%s: min_rate(%lu),timeout(%d)\n",
 	       __func__, min_rate, timeout_ms);
 	min_cpulock_freq = min_rate;
 	if (max_rate != 0)
@@ -759,11 +769,39 @@ _out:
 	return ret;
 }
 
+#ifdef CONFIG_KOWALSKI_CPU_SUSPEND_FREQ_LIMIT
+extern unsigned int kowalski_cpu_suspend_max_freq;
+static unsigned int stored_cpu_user_cap = 0;
+
+static void cpu_tegra_suspend(struct early_suspend *handler) {
+	if (kowalski_cpu_suspend_max_freq) {
+		pr_info("Kowalski cpufreq suspend: setting max frequency to %d kHz\n", kowalski_cpu_suspend_max_freq);
+		stored_cpu_user_cap = cpu_user_cap;
+		cpu_user_cap = kowalski_cpu_suspend_max_freq;
+	}
+}
+
+static void cpu_tegra_resume(struct early_suspend *handler) {
+	if (stored_cpu_user_cap) {
+		pr_info("Kowalski cpufreq resume: restoring max frequency to %d kHz\n", stored_cpu_user_cap);
+		cpu_user_cap = stored_cpu_user_cap;
+		stored_cpu_user_cap = 0;
+	}
+}
+
+static struct early_suspend cpu_tegra_suspend_handler = {
+	.suspend = cpu_tegra_suspend,
+	.resume = cpu_tegra_resume,
+};
+#endif
 
 static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
 	void *dummy)
 {
+	unsigned int freq;
+
 	mutex_lock(&tegra_cpu_lock);
+
 	if (event == PM_SUSPEND_PREPARE) {
 		is_suspended = true;
 		pr_info("Tegra cpufreq suspend: setting frequency to %d kHz\n",
@@ -772,7 +810,6 @@ static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
 		tegra_auto_hotplug_governor(
 			freq_table[suspend_index].frequency, true);
 	} else if (event == PM_POST_SUSPEND) {
-		unsigned int freq;
 		is_suspended = false;
 		tegra_cpu_edp_init(true);
 		tegra_cpu_set_speed_cap(&freq);
@@ -808,6 +845,7 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
 
 	cpufreq_frequency_table_cpuinfo(policy, freq_table);
 	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
+	policy->max = tegra_getspeed(policy->cpu);
 	policy->cur = tegra_getspeed(policy->cpu);
 	target_cpu_speed[policy->cpu] = policy->cur;
 
@@ -819,6 +857,9 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
 
 	if (policy->cpu == 0) {
 		register_pm_notifier(&tegra_cpu_pm_notifier);
+#ifdef CONFIG_KOWALSKI_CPU_SUSPEND_FREQ_LIMIT
+		register_early_suspend(&cpu_tegra_suspend_handler);
+#endif
 	}
 
 	return 0;

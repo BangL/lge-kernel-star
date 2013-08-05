@@ -180,7 +180,6 @@ static int tegra_wm8994_hw_params(struct snd_pcm_substream *substream,
 	}
 */
 	cdev_srate = clk_get_rate(machine->util_data.clk_cdev1);
-	printk(KERN_ERR "tegra_soc_wm8994.c tegra_wm8994_hw_params sys_clk=%d\n",cdev_srate); 
 #if 0
 	err = snd_soc_dai_set_pll(codec_dai, WM8994_FLL1, WM8994_FLL_SRC_MCLK1, cdev_srate, 11289600/* I2S1_CLK*/);
 	if (err < 0) {
@@ -912,8 +911,8 @@ static const struct snd_soc_dapm_route tegra_wm8994_audio_map[] = {
 	{ "IN1LN", NULL, "MICBIAS1" },
 
 	/* sub mic is connected to IN1RN */
-	{"MICBIAS2", NULL, "Line Jack"},
-	{"IN1RN", NULL, "MICBIAS2" },		
+	{"MICBIAS1", NULL, "Mic Jack"},
+	{"IN1RN", NULL, "MICBIAS1" },		
 
 };
 
@@ -1025,7 +1024,7 @@ static int tegra_wm8994_init(struct snd_soc_pcm_runtime *rtd)
 		}
 		machine->gpio_requested |= GPIO_HP_MUTE;
 
-		gpio_direction_output(pdata->gpio_hp_mute, 0);
+		gpio_direction_output(pdata->gpio_hp_mute, 1);
 	}
 
 	if (gpio_is_valid(pdata->gpio_int_mic_en)) {

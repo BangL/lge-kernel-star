@@ -60,6 +60,9 @@
 #include <dhd_proto.h>
 #include <dhd_dbg.h>
 #include <wl_iw.h>
+
+#include <linux/moduleparam.h>
+#include <linux/module.h>
 /*
  * NOTE: to enable keep alive, define KEEP_ALIVE here
  * or in the makefile, also must use -keepalive- firmware
@@ -160,12 +163,18 @@ static int wifi_remove(struct platform_device *pdev)
 static int wifi_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	DHD_TRACE(("##> %s\n", __FUNCTION__));
+	#if defined (OOB_INTR_ONLY)
+		bcmsdh_oob_intr_set(0);
+	#endif
 	return 0;
 }
 static int wifi_resume(struct platform_device *pdev)
 {
 	DHD_TRACE(("##> %s\n", __FUNCTION__));
-	 return 0;
+	#if defined (OOB_INTR_ONLY)
+		bcmsdh_oob_intr_set(1);
+	#endif
+	return 0;
 }
 
 static struct platform_driver wifi_device = {
@@ -552,7 +561,19 @@ static void dhd_set_packet_filter(int value, dhd_pub_t *dhd)
 #endif
 }
 
+#ifdef CONFIG_KOWALSKI_WIFI_PM
+extern bool kowalski_wifi_max_pm;
+extern bool kowalski_wifi_wake_pm;
+extern bool kowalski_wifi_hotspot_pm;
 
+extern void kowalski_wifi_unregister_dbm_cb(void);
+
+/*
+extern void start_dbm_timer(void);
+extern void pause_dbm_timer(void);
+extern void stop_dbm_timer(void);
+*/
+#endif
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 #if defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD)	/*Setting dtim.	20110120*/
@@ -560,111 +581,67 @@ extern uint wl_dtim_val;
 #endif
 static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 {
-#if 0 //                                                                                               
-	int power_mode = PM_MAX;
-	/* wl_pkt_filter_enable_t	enable_parm; */
+	int power_mode = PM_OFF;
 	char iovbuf[32];
 	int bcn_li_dtim = 3;
-#endif
-#if defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD)	/*Setting dtim.	20110120*/
-	char iovbuf[32];
-	int bcn_li_dtim = 0;
-#endif
-//                                                                                                                                                                 
-#if 1
-	uint roamvar = 1;
-	//char iovbuf[32];
-#endif /* if 1 */
 
-	DHD_TRACE(("%s: enter, value = %d in_suspend=%d\n", \
-			__FUNCTION__, value, dhd->in_suspend));
-
-	if (dhd && dhd->up) {  //                                                                                    
-//	if (dhd ) {
+	if (dhd && dhd->up) {
 		if (value && dhd->in_suspend) {
+			if(ap_priv_running == TRUE)
+			{
+				ap_suspend_status = 1;
+			}
+			else
+			{
+#ifdef CONFIG_KOWALSKI_WIFI_PM
+				if (kowalski_wifi_max_pm) {
+					power_mode = PM_MAX;
+					printk("%s: suspending in PM_MAX mode\n", __FUNCTION__);
+				} else {
+					power_mode = PM_FAST;
+					printk("%s: suspending in PM_FAST mode\n", __FUNCTION__);
+				}
 
+				// pause_dbm_timer();
+#endif
 				/* Kernel suspended */
-				DHD_TRACE(("%s: force extra Suspend setting \n", __FUNCTION__));
-
-#if 0 //                                                                                               
 				dhdcdc_set_ioctl(dhd, 0, WLC_SET_PM,
 					(char *)&power_mode, sizeof(power_mode));
-#endif
 
 				/* Enable packet filter, only allow unicast packet to send up */
 				dhd_set_packet_filter(1, dhd);
 
-#if defined(CONFIG_LGE_BCM432X_PATCH)	//20110121
-				if(ap_priv_running == TRUE)
-					ap_suspend_status = 1;
-#endif
-				/* if dtim skip setup as default force it to wake each thrid dtim
-				 *  for better power saving.
-				 *  Note that side effect is chance to miss BC/MC packet
-				*/
-#if 0 //                                                                                               
-				bcn_li_dtim = dhd_get_dtim_skip(dhd);
 				bcm_mkiovar("bcn_li_dtim", (char *)&bcn_li_dtim,
 					4, iovbuf, sizeof(iovbuf));
 				dhdcdc_set_ioctl(dhd, 0, WLC_SET_VAR, iovbuf, sizeof(iovbuf));
+			}
+		} else {
+			/* Kernel resumed  */
+
+			if(ap_priv_running == TRUE)
+			{
+				ap_suspend_status = 0;
+			}
+			else
+			{
+#ifdef CONFIG_KOWALSKI_WIFI_PM
+				power_mode = PM_OFF;
+				if (kowalski_wifi_wake_pm)
+					power_mode = PM_FAST;
+
+				// start_dbm_timer();
 #endif
-#if defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD)	/*Setting dtim.	20110120 */
-				bcn_li_dtim = wl_dtim_val;
-				printk("%s:%d wl_dtim_val = %d\n",__func__,__LINE__,wl_dtim_val);
-				if(bcn_li_dtim > 0){
-					bcm_mkiovar("bcn_li_dtim", (char *)&bcn_li_dtim,
-							4, iovbuf, sizeof(iovbuf));
-					dhdcdc_set_ioctl(dhd, 0, WLC_SET_VAR, iovbuf, sizeof(iovbuf));
-				}
-#endif
-//                                                                                                                                                                 
-#if 1
-				/* Disable build-in roaming during suspend */
-				bcm_mkiovar("roam_off", (char *)&roamvar, 4, \
-					iovbuf, sizeof(iovbuf));
-				dhdcdc_set_ioctl(dhd, 0, WLC_SET_VAR, iovbuf, sizeof(iovbuf));
-#endif /* if 1 */
-
-			} else {
-
-				/* Kernel resumed  */
-				DHD_TRACE(("%s: Remove extra suspend setting \n", __FUNCTION__));
-
-#if 0 //                                                                                               
-				power_mode = PM_FAST;
 				dhdcdc_set_ioctl(dhd, 0, WLC_SET_PM, (char *)&power_mode,
 					sizeof(power_mode));
-#endif
 
 				/* disable pkt filter */
 				dhd_set_packet_filter(0, dhd);
 
-#if defined(CONFIG_LGE_BCM432X_PATCH)	//20110121
-				if(ap_priv_running == TRUE)
-					ap_suspend_status = 0;
-#endif
-#if 0 //                                                                                               
-				/* restore pre-suspend setting for dtim_skip */
 				bcm_mkiovar("bcn_li_dtim", (char *)&dhd->dtim_skip,
 					4, iovbuf, sizeof(iovbuf));
-
 				dhdcdc_set_ioctl(dhd, 0, WLC_SET_VAR, iovbuf, sizeof(iovbuf));
-#endif
-#if defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD)	/*Setting dtim.	20110120*/
-				bcn_li_dtim = 0;
-				bcm_mkiovar("bcn_li_dtim", (char *)&bcn_li_dtim,
-					4, iovbuf, sizeof(iovbuf));
-
-				dhdcdc_set_ioctl(dhd, 0, WLC_SET_VAR, iovbuf, sizeof(iovbuf));
-#endif
-//                                                                                                                                                                 
-#if 1
-				roamvar = 0; /* default - roaming enabled */
-				bcm_mkiovar("roam_off", (char *)&roamvar, 4, iovbuf, \
-						 sizeof(iovbuf));
-				dhdcdc_set_ioctl(dhd, 0, WLC_SET_VAR, iovbuf, sizeof(iovbuf));
-#endif /* if 1 */
 			}
+		}
 	}
 
 	return 0;
@@ -673,7 +650,6 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 static void dhd_suspend_resume_helper(struct dhd_info *dhd, int val)
 {
 	dhd_pub_t *dhdp = &dhd->pub;
-
 	dhd_os_proto_block(dhdp);
 	/* Set flag when early suspend was called */
 	dhdp->in_suspend = val;
@@ -686,7 +662,7 @@ static void dhd_early_suspend(struct early_suspend *h)
 {
 	struct dhd_info *dhd = container_of(h, struct dhd_info, early_suspend);
 
-	DHD_TRACE(("%s: enter\n", __FUNCTION__));
+	printk("%s: enter\n", __FUNCTION__);
 
 	if (dhd)
 		dhd_suspend_resume_helper(dhd, 1);
@@ -697,7 +673,7 @@ static void dhd_late_resume(struct early_suspend *h)
 {
 	struct dhd_info *dhd = container_of(h, struct dhd_info, early_suspend);
 
-	DHD_TRACE(("%s: enter\n", __FUNCTION__));
+	printk("%s: enter\n", __FUNCTION__);
 
 	if (dhd)
 		dhd_suspend_resume_helper(dhd, 0);
@@ -1044,6 +1020,19 @@ dhd_op_if(dhd_if_t *ifp)
 					current->pid, ifp->net->name));
 				ifp->state = 0;
 			}
+
+#if defined(CONFIG_LGE_BCM432X_PATCH) && defined(CONFIG_KOWALSKI_WIFI_PM)
+			if(ap_priv_running == TRUE)
+			{
+				int power_mode = PM_OFF;
+				if (kowalski_wifi_hotspot_pm)
+					power_mode = PM_FAST;
+
+				dhdcdc_set_ioctl(&dhd->pub, 0, WLC_SET_PM,
+					(char *)&power_mode, sizeof(power_mode));
+				printk("%s: Setting card power mode: %s\n", __FUNCTION__, ((power_mode == PM_FAST) ? "PM_FAST" : "PM_OFF"));
+			}
+#endif
 		}
 		break;
 	case WLC_E_IF_DEL:
@@ -1326,14 +1315,12 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt)
 	struct sk_buff *skb;
 	uchar *eth;
 	uint len;
-	void * data, *pnext, *save_pktbuf;
+	void * data, *pnext;
 	int i;
 	dhd_if_t *ifp;
 	wl_event_msg_t event;
 
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
-
-	save_pktbuf = pktbuf;
 
 	for (i = 0; pktbuf && i < numpkt; i++, pktbuf = pnext) {
 
@@ -1479,12 +1466,9 @@ dhd_get_stats(struct net_device *net)
 static int
 dhd_watchdog_thread(void *data)
 {
-
 	tsk_ctl_t *tsk = (tsk_ctl_t *)data;
 	dhd_info_t *dhd = (dhd_info_t *)tsk->parent;
-//	dhd_info_t *dhd = (dhd_info_t *)data;
 	WAKE_LOCK_INIT(&dhd->pub, WAKE_LOCK_WATCHDOG, "dhd_watchdog_thread");
-
 	/* This thread doesn't need any user-level access,
 	 * so get rid of all our resources
 	 */
@@ -1495,7 +1479,7 @@ dhd_watchdog_thread(void *data)
 			dhd_watchdog_prio:(MAX_RT_PRIO-1);
 		setScheduler(current, SCHED_FIFO, &param);
 	}
-#endif /* DHD_SCHED */
+#endif
 
 	DAEMONIZE("dhd_watchdog");
 
@@ -1503,7 +1487,6 @@ dhd_watchdog_thread(void *data)
 	complete(&tsk->completed);
 
 	while (1) {
-//		if (down_interruptible (&dhd->watchdog_sem) == 0) {
 		if (down_interruptible (&tsk->sema) == 0) {
 
 			SMP_RD_BARRIER_DEPENDS();
@@ -1533,8 +1516,7 @@ dhd_watchdog_thread(void *data)
 	}
 
 	WAKE_LOCK_DESTROY(&dhd->pub, WAKE_LOCK_WATCHDOG);
-		complete_and_exit(&tsk->completed, 0);
-//	complete_and_exit(&dhd->watchdog_exited, 0);
+	complete_and_exit(&tsk->completed, 0);
 }
 
 static void
@@ -1949,7 +1931,8 @@ dhd_ioctl_entry(struct net_device *net, struct ifreq *ifr, int cmd)
 		} else {
 		*/
 		{
-			if (!(buf = (char*)MALLOC(dhd->pub.osh, buflen))) {
+			buf = kmalloc(buflen, GFP_ATOMIC);
+			if (!buf) {
 				bcmerror = -BCME_NOMEM;
 				goto done;
 			}
@@ -2004,13 +1987,9 @@ dhd_ioctl_entry(struct net_device *net, struct ifreq *ifr, int cmd)
 	if (is_set_key_cmd) {
 		dhd_wait_pend8021x(net);
 	}
-	WAKE_LOCK_INIT(&dhd->pub, WAKE_LOCK_IOCTL, "dhd_ioctl_entry");
-	WAKE_LOCK(&dhd->pub, WAKE_LOCK_IOCTL);
 
 	bcmerror = dhd_prot_ioctl(&dhd->pub, ifidx, (wl_ioctl_t *)&ioc, buf, buflen);
 
-	WAKE_UNLOCK(&dhd->pub, WAKE_LOCK_IOCTL);
-	WAKE_LOCK_DESTROY(&dhd->pub, WAKE_LOCK_IOCTL);
 	if ((bcmerror == -ETIMEDOUT) || ((dhd->pub.busstate == DHD_BUS_DOWN) && \
 			(!dhd->pub.dongle_reset))) {
 		DHD_ERROR(("%s: Event HANG send up\n", __FUNCTION__));
@@ -2022,8 +2001,12 @@ done:
 			bcmerror = -EFAULT;
 	}
 
-	if (buf)
-		MFREE(dhd->pub.osh, buf, buflen);
+	kfree(buf);
+
+	if (bcmerror > 0)
+		bcmerror = 0;
+	else if (bcmerror < BCME_LAST)
+		bcmerror = BCME_ERROR;
 
 	return OSL_ERROR(bcmerror);
 }
@@ -2482,8 +2465,8 @@ dhd_bus_start(dhd_pub_t *dhdp)
 	/* Setup filter to deny only broadcast */
 	dhdp->pktfilter[0] = "100 0 0 0 0xff 0xff";
 #else
-	/* Setup filter to allow only unicast */
-	dhdp->pktfilter[0] = "100 0 0 0 0x01 0x00";
+ 	/* Setup filter to allow only unicast */
+ 	dhdp->pktfilter[0] = "100 0 0 0 0x01 0x00";
 #endif
 // 20101008 byoungwook.baek@lge.com, bug-fix: When LCD turned off, multicast packet is filtered [END]
 
@@ -2681,6 +2664,12 @@ dhd_detach(dhd_pub_t *dhdp)
 		if (dhd) {
 			dhd_if_t *ifp;
 			int i;
+
+#ifdef CONFIG_KOWALSKI_WIFI_PM
+			// stop_dbm_timer();
+			printk("%s: unregistering kowalski_wifi callbacks\n", __FUNCTION__);
+			kowalski_wifi_unregister_dbm_cb();
+#endif
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 		if (dhd->early_suspend.suspend)
@@ -3276,9 +3265,11 @@ int net_os_set_suspend(struct net_device *dev, int val)
 	dhd_info_t *dhd = *(dhd_info_t **)netdev_priv(dev);
 
 	if (dhd) {
+		WAKE_LOCK(&dhd->pub, WAKE_LOCK_WATCHDOG);
 		dhd_os_proto_block(&dhd->pub);
 		ret = dhd_set_suspend(val, &dhd->pub);
 		dhd_os_proto_unblock(&dhd->pub);
+		WAKE_UNLOCK(&dhd->pub, WAKE_LOCK_WATCHDOG);
 	}
 #endif /* defined(CONFIG_HAS_EARLYSUSPEND) */
 	return ret;

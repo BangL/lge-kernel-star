@@ -442,16 +442,8 @@ static struct max8907c_platform_data max8907c_pdata = {
 static struct regulator_consumer_supply max8952_MODE0_supply[] = {
 };
 
-static struct regulator_consumer_supply max8952_MODE1_supply[] = {      
-#if defined( CONFIG_MACH_STAR) && defined(CONFIG_MACH_STAR_SU660)
-	REGULATOR_SUPPLY("vdd_cpu", NULL),	
-#endif	
-#if defined( CONFIG_MACH_STAR) && defined(CONFIG_MACH_STAR_P990)
-	REGULATOR_SUPPLY("vdd_cpu", NULL),	
-#endif
-#if defined( CONFIG_MACH_STAR) && defined(CONFIG_MACH_STAR_P999)
-	REGULATOR_SUPPLY("vdd_cpu", NULL),	
-#endif
+static struct regulator_consumer_supply max8952_MODE1_supply[] = {
+	REGULATOR_SUPPLY("vdd_cpu", NULL),
 };
 
 static struct regulator_consumer_supply max8952_MODE2_supply[] = {
@@ -482,7 +474,15 @@ static struct platform_device max8952_##_id##_device = {		\
 }
 
 MAX8952_REGULATOR_INIT(MODE0, 770000, 1400000);
-MAX8952_REGULATOR_INIT(MODE1, 770000, 1400000);
+#if defined(CONFIG_KOWALSKI_UV) && defined(CONFIG_KOWALSKI_OC)
+#if defined(CONFIG_KOWALSKI_MAX_OC)
+	MAX8952_REGULATOR_INIT(MODE1, 700000, 1300000);
+#else //CONFIG_KOWALSKI_MAX_OC
+	MAX8952_REGULATOR_INIT(MODE1, 700000, 1200000);
+#endif
+#else // CONFIG_KOWALSKI_UV
+	MAX8952_REGULATOR_INIT(MODE1, 770000, 1400000);
+#endif
 MAX8952_REGULATOR_INIT(MODE2, 770000, 1400000);
 MAX8952_REGULATOR_INIT(MODE3, 770000, 1400000);
 

@@ -33,6 +33,16 @@
 
 #include <trace/events/power.h>
 
+#ifdef CONFIG_KOWALSKI_CPU_SUSPEND_FREQ_LIMIT
+unsigned int kowalski_cpu_suspend_max_freq = 1000000;
+#endif
+
+#ifdef CONFIG_KOWALSKI_UV
+#include "../dvfs.h"
+int *UV_mV_Ptr;
+extern struct dvfs *cpu_dvfs;
+#endif
+
 #define dprintk(msg...) cpufreq_debug_printk(CPUFREQ_DEBUG_CORE, \
 						"cpufreq-core", msg)
 
@@ -533,6 +543,9 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 	unsigned int ret = -EINVAL;
 	char	str_governor[16];
 	struct cpufreq_policy new_policy;
+	char *envp[3];
+	char buf1[64];
+	char buf2[64];
 
 	ret = cpufreq_get_policy(&new_policy, policy->cpu);
 	if (ret)
@@ -552,6 +565,13 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 
 	policy->user_policy.policy = policy->policy;
 	policy->user_policy.governor = policy->governor;
+
+	snprintf(buf1, sizeof(buf1), "GOV=%s", policy->governor->name);
+	snprintf(buf2, sizeof(buf2), "CPU=%u", policy->cpu);
+	envp[0] = buf1;
+	envp[1] = buf2;
+	envp[2] = NULL;
+	kobject_uevent_env(cpufreq_global_kobject, KOBJ_ADD, envp);
 
 	if (ret)
 		return ret;
@@ -668,6 +688,65 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
 }
 
+#ifdef CONFIG_KOWALSKI_UV
+static ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf)
+{
+	int i;
+	char *table = buf;
+
+	if (cpu_dvfs == NULL)
+		return sprintf(buf, "INIT\n");
+
+	for (i = cpu_dvfs->num_freqs - 1; i >= 0; i--) {
+		table += sprintf(table, "%limhz: %d mV\n", cpu_dvfs->freqs[i]/1000000, cpu_dvfs->millivolts[i] - UV_mV_Ptr[i]);
+	}
+	table += sprintf(table, "\n");
+	return table - buf;
+}
+
+static ssize_t store_UV_mV_table(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	char *p = buf, *k;
+	long uv;
+	int i = cpu_dvfs->num_freqs - 1;
+
+	while (i >= 0) {
+		k = strsep(&p, " ");
+		if (k == NULL)
+			break;
+		if (strlen(k) > 0) {
+			uv = simple_strtol(k, NULL, 10);
+			UV_mV_Ptr[i] = cpu_dvfs->millivolts[i] - uv;
+			i--;
+		}
+	}
+
+	if (i == cpu_dvfs->num_freqs - 1)
+		return -EINVAL;
+
+	return count;
+}
+#endif
+
+#ifdef CONFIG_KOWALSKI_CPU_SUSPEND_FREQ_LIMIT
+static ssize_t show_screen_off_max_freq(struct cpufreq_policy *policy, char *buf)
+{
+	return sprintf(buf, "%d\n", kowalski_cpu_suspend_max_freq);
+}
+
+static ssize_t store_screen_off_max_freq(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int max;
+	max = simple_strtoul(buf, NULL, 10);
+
+	if (max <= policy->cpuinfo.max_freq && max >= policy->cpuinfo.min_freq) {
+		kowalski_cpu_suspend_max_freq = max;
+	}
+
+	return count;
+}
+#endif
+
 cpufreq_freq_attr_ro_perm(cpuinfo_cur_freq, 0400);
 cpufreq_freq_attr_ro(cpuinfo_min_freq);
 cpufreq_freq_attr_ro(cpuinfo_max_freq);
@@ -685,6 +764,14 @@ cpufreq_freq_attr_rw(scaling_setspeed);
 cpufreq_freq_attr_ro(policy_min_freq);
 cpufreq_freq_attr_ro(policy_max_freq);
 
+#ifdef CONFIG_KOWALSKI_UV
+cpufreq_freq_attr_rw(UV_mV_table);
+#endif
+
+#ifdef CONFIG_KOWALSKI_CPU_SUSPEND_FREQ_LIMIT
+cpufreq_freq_attr_rw(screen_off_max_freq);
+#endif
+
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
 	&cpuinfo_max_freq.attr,
@@ -699,6 +786,14 @@ static struct attribute *default_attrs[] = {
 	&scaling_setspeed.attr,
 	&policy_min_freq.attr,
 	&policy_max_freq.attr,
+
+#ifdef CONFIG_KOWALSKI_UV
+	&UV_mV_table.attr,
+#endif
+
+#ifdef CONFIG_KOWALSKI_CPU_SUSPEND_FREQ_LIMIT
+	&screen_off_max_freq.attr,
+#endif
 	NULL
 };
 
@@ -1026,19 +1121,28 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 	INIT_WORK(&policy->update, handle_update);
 
 	/* Set governor before ->init, so that driver could check it */
-#ifdef CONFIG_HOTPLUG_CPU
+#ifdef CONFIG_KOWALSKI_AUTO_HOTPLUG
+	struct cpufreq_policy *cp;
 	for_each_online_cpu(sibling) {
-		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
+		cp = per_cpu(cpufreq_cpu_data, sibling);
 		if (cp && cp->governor &&
-		    (cpumask_test_cpu(cpu, cp->related_cpus))) {
+				(cpumask_test_cpu(cpu, cp->related_cpus))) {
+			printk("%s: found sibling CPU, copying policy\n", __FUNCTION__);
 			policy->governor = cp->governor;
+			policy->min = cp->min;
+			policy->max = cp->max;
+			policy->user_policy.min = cp->user_policy.min;
+			policy->user_policy.max = cp->user_policy.max;
 			found = 1;
 			break;
 		}
 	}
 #endif
 	if (!found)
+	{
+		printk("%s: failed to find sibling CPU, falling back to defaults\n", __FUNCTION__);
 		policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
+	}
 	/* call driver. From then on the cpufreq must be able
 	 * to accept all calls to ->verify and ->setpolicy for this CPU
 	 */
@@ -2039,6 +2143,10 @@ static int __init cpufreq_core_init(void)
 {
 	int cpu;
 	int rc;
+
+#ifdef CONFIG_KOWALSKI_UV
+	UV_mV_Ptr = kzalloc(sizeof(int)*(MAX_DVFS_FREQS), GFP_KERNEL);
+#endif
 
 	for_each_possible_cpu(cpu) {
 		per_cpu(cpufreq_policy_cpu, cpu) = -1;

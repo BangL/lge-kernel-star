@@ -902,9 +902,10 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
 
 	WARN_ON(host->cmd);
 
-	/* Wait max 10 ms */
-	timeout = 10;
+	/* Wait max 100 ms */
+	timeout = 100;
 
+	sdhci_writel(host, SDHCI_INT_ALL_MASK, SDHCI_INT_STATUS);
 	mask = SDHCI_CMD_INHIBIT;
 	if ((cmd->data != NULL) || (cmd->flags & MMC_RSP_BUSY))
 		mask |= SDHCI_DATA_INHIBIT;
@@ -2103,9 +2104,14 @@ int sdhci_suspend_host(struct sdhci_host *host, pm_message_t state)
 	sdhci_disable_card_detection(host);
 
 	if (mmc->card && (mmc->card->type != MMC_TYPE_SDIO))
-		ret = mmc_suspend_host(host->mmc);
+	 	ret = mmc_suspend_host(host->mmc);
 
-	if (mmc->pm_flags & MMC_PM_KEEP_POWER)
+	if (ret) {
+		sdhci_enable_card_detection(host);
+		return ret;
+	}
+
+	if (mmc_card_keep_power(mmc))
 		host->card_int_set = sdhci_readl(host, SDHCI_INT_ENABLE) &
 			SDHCI_INT_CARD_INT;
 
@@ -2133,7 +2139,6 @@ int sdhci_resume_host(struct sdhci_host *host)
 			return ret;
 	}
 
-
 	if (host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA)) {
 		if (host->ops->enable_dma)
 			host->ops->enable_dma(host);
@@ -2142,7 +2147,7 @@ int sdhci_resume_host(struct sdhci_host *host)
 	if (host->irq)
 		enable_irq(host->irq);
 
-	sdhci_init(host, (host->mmc->pm_flags & MMC_PM_KEEP_POWER));
+	sdhci_init(host, mmc_card_keep_power(mmc));
 	mmiowb();
 
 	if (mmc->card) {
@@ -2150,10 +2155,9 @@ int sdhci_resume_host(struct sdhci_host *host)
 			ret = mmc_resume_host(host->mmc);
 		} else {
 			/* Enable card interrupt as it is overwritten in sdhci_init */
-			if ((mmc->caps & MMC_CAP_SDIO_IRQ) &&
-				(mmc->pm_flags & MMC_PM_KEEP_POWER))
-					if (host->card_int_set)
-						mmc->ops->enable_sdio_irq(mmc, true);
+			if ((mmc->caps & MMC_CAP_SDIO_IRQ) && mmc_card_keep_power(mmc))
+				if (host->card_int_set)
+					mmc->ops->enable_sdio_irq(mmc, true);
 		}
 	}
 
